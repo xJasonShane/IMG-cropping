@@ -47,7 +47,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import Cropper from 'cropperjs'
-import 'cropperjs/dist/cropper.css'
 import { useImageStore } from '../stores/image'
 import { useSettingsStore } from '../stores/settings'
 import { parseAspectRatio } from '../utils/helpers'

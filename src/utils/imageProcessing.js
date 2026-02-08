@@ -104,3 +104,11 @@ export const downloadZip = (zipBlob, filename = 'cropped_images.zip') => {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+
+export const canvasToBlob = (canvas, type = 'image/png', quality = 0.9) => {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      resolve(blob)
+    }, type, quality)
+  })
+}
