@@ -144,6 +144,11 @@ const updateAspectRatio = () => {
 }
 
 watch(() => settingsStore.aspectRatio, updateAspectRatio)
+watch(() => props.image, () => {
+  if (imageRef.value) {
+    initCropper()
+  }
+}, { deep: true })
 
 onBeforeUnmount(() => {
   if (cropper) {

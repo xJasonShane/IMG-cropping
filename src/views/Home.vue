@@ -42,7 +42,7 @@
             </div>
           </div>
           
-          <ImageCropper ref="cropperRef" :image="currentImage" />
+          <ImageCropper ref="cropperRef" :image="currentImage" :key="currentImage?.id" />
           
           <div class="mt-6 flex flex-wrap gap-4">
             <button
