@@ -5,11 +5,33 @@ export const useImageStore = defineStore('image', () => {
   const images = ref([])
   const currentImage = ref(null)
   const cropperInstance = ref(null)
-  const history = ref([])
-  const historyIndex = ref(-1)
+  const history = ref([{ images: [], currentImageId: null }])
+  const historyIndex = ref(0)
+  const isRestoring = ref(false)
 
   const canUndo = computed(() => historyIndex.value > 0)
   const canRedo = computed(() => historyIndex.value < history.value.length - 1)
+
+  const saveToHistory = () => {
+    if (isRestoring.value) return
+    
+    const state = {
+      images: images.value.map(img => ({ ...img })),
+      currentImageId: currentImage.value?.id
+    }
+    
+    if (historyIndex.value < history.value.length - 1) {
+      history.value = history.value.slice(0, historyIndex.value + 1)
+    }
+    
+    history.value.push(state)
+    historyIndex.value = history.value.length - 1
+    
+    if (history.value.length > 50) {
+      history.value.shift()
+      historyIndex.value--
+    }
+  }
 
   const addImage = (image) => {
     images.value.push(image)
@@ -37,42 +59,27 @@ export const useImageStore = defineStore('image', () => {
     cropperInstance.value = instance
   }
 
-  const saveToHistory = () => {
-    const state = {
-      images: JSON.parse(JSON.stringify(images.value)),
-      currentImageId: currentImage.value?.id
-    }
-    
-    if (historyIndex.value < history.value.length - 1) {
-      history.value = history.value.slice(0, historyIndex.value + 1)
-    }
-    
-    history.value.push(state)
-    historyIndex.value = history.value.length - 1
-    
-    if (history.value.length > 50) {
-      history.value.shift()
-      historyIndex.value--
-    }
-  }
-
   const undo = () => {
     if (canUndo.value) {
+      isRestoring.value = true
       historyIndex.value--
       restoreFromHistory()
+      setTimeout(() => { isRestoring.value = false }, 0)
     }
   }
 
   const redo = () => {
     if (canRedo.value) {
+      isRestoring.value = true
       historyIndex.value++
       restoreFromHistory()
+      setTimeout(() => { isRestoring.value = false }, 0)
     }
   }
 
   const restoreFromHistory = () => {
     const state = history.value[historyIndex.value]
-    images.value = JSON.parse(JSON.stringify(state.images))
+    images.value = state.images.map(img => ({ ...img }))
     currentImage.value = images.value.find(img => img.id === state.currentImageId)
   }
 

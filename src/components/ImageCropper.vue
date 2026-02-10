@@ -2,12 +2,16 @@
   <div class="cropper-container">
     <div class="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden" :style="{ height: height }">
       <img
+        v-if="image && image.dataUrl"
         ref="imageRef"
         :src="image.dataUrl"
         :alt="image.name"
         class="max-w-full"
         @load="initCropper"
       />
+      <div v-else class="flex items-center justify-center h-full text-gray-500">
+        <span>加载图片中...</span>
+      </div>
     </div>
     
     <div class="flex items-center justify-center space-x-4 mt-4">
@@ -45,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import Cropper from 'cropperjs'
 import { useImageStore } from '../stores/image'
 import { useSettingsStore } from '../stores/settings'
@@ -68,14 +72,17 @@ const imageStore = useImageStore()
 const settingsStore = useSettingsStore()
 
 const imageRef = ref(null)
-let cropper = null
+const cropperInstance = ref(null)
 
 const initCropper = () => {
-  if (cropper) {
-    cropper.destroy()
+  if (!imageRef.value) return
+  
+  if (cropperInstance.value) {
+    cropperInstance.value.destroy()
+    cropperInstance.value = null
   }
 
-  cropper = new Cropper(imageRef.value, {
+  cropperInstance.value = new Cropper(imageRef.value, {
     aspectRatio: parseAspectRatio(settingsStore.aspectRatio),
     viewMode: 1,
     dragMode: 'move',
@@ -89,48 +96,48 @@ const initCropper = () => {
     toggleDragModeOnDblclick: false,
     background: false,
     ready: () => {
-      imageStore.setCropperInstance(cropper)
-      emit('ready', cropper)
+      imageStore.setCropperInstance(cropperInstance.value)
+      emit('ready', cropperInstance.value)
     },
     crop: () => {
-      emit('crop', cropper)
+      emit('crop', cropperInstance.value)
     }
   })
 }
 
 const rotateLeft = () => {
-  if (cropper) {
-    cropper.rotate(-90)
+  if (cropperInstance.value) {
+    cropperInstance.value.rotate(-90)
     props.image.rotation = (props.image.rotation - 90) % 360
   }
 }
 
 const rotateRight = () => {
-  if (cropper) {
-    cropper.rotate(90)
+  if (cropperInstance.value) {
+    cropperInstance.value.rotate(90)
     props.image.rotation = (props.image.rotation + 90) % 360
   }
 }
 
 const flipHorizontal = () => {
-  if (cropper) {
-    const data = cropper.getData()
-    cropper.scaleX(-data.scaleX || -1)
+  if (cropperInstance.value) {
+    const data = cropperInstance.value.getData()
+    cropperInstance.value.scaleX(-data.scaleX || -1)
     props.image.scaleX = (props.image.scaleX || 1) * -1
   }
 }
 
 const flipVertical = () => {
-  if (cropper) {
-    const data = cropper.getData()
-    cropper.scaleY(-data.scaleY || -1)
+  if (cropperInstance.value) {
+    const data = cropperInstance.value.getData()
+    cropperInstance.value.scaleY(-data.scaleY || -1)
     props.image.scaleY = (props.image.scaleY || 1) * -1
   }
 }
 
 const reset = () => {
-  if (cropper) {
-    cropper.reset()
+  if (cropperInstance.value) {
+    cropperInstance.value.reset()
     props.image.rotation = 0
     props.image.scaleX = 1
     props.image.scaleY = 1
@@ -138,26 +145,29 @@ const reset = () => {
 }
 
 const updateAspectRatio = () => {
-  if (cropper) {
-    cropper.setAspectRatio(parseAspectRatio(settingsStore.aspectRatio))
+  if (cropperInstance.value) {
+    cropperInstance.value.setAspectRatio(parseAspectRatio(settingsStore.aspectRatio))
   }
 }
 
 watch(() => settingsStore.aspectRatio, updateAspectRatio)
 watch(() => props.image, () => {
-  if (imageRef.value) {
-    initCropper()
-  }
+  nextTick(() => {
+    if (imageRef.value) {
+      initCropper()
+    }
+  })
 }, { deep: true })
 
 onBeforeUnmount(() => {
-  if (cropper) {
-    cropper.destroy()
+  if (cropperInstance.value) {
+    cropperInstance.value.destroy()
+    cropperInstance.value = null
   }
 })
 
 defineExpose({
-  cropper,
+  cropper: cropperInstance,
   rotateLeft,
   rotateRight,
   flipHorizontal,
