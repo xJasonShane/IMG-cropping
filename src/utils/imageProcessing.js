@@ -77,6 +77,129 @@ export const applyFilters = (cropper, filters = {}) => {
   return canvas
 }
 
+export const applyWatermark = (canvas, watermark) => {
+  if (!watermark.enabled) return canvas
+  
+  const ctx = canvas.getContext('2d')
+  const { width, height } = canvas
+  
+  ctx.save()
+  ctx.globalAlpha = watermark.opacity / 100
+  
+  if (watermark.type === 'text' && watermark.text) {
+    const position = calculatePosition(width, height, watermark.position, {
+      width: ctx.measureText(watermark.text).width + watermark.fontSize,
+      height: watermark.fontSize * 1.5
+    })
+    
+    ctx.translate(position.x, position.y)
+    ctx.rotate((watermark.rotation * Math.PI) / 180)
+    
+    ctx.font = `${watermark.fontSize}px Arial, sans-serif`
+    ctx.fillStyle = watermark.color
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
+    ctx.shadowBlur = 4
+    ctx.shadowOffsetX = 2
+    ctx.shadowOffsetY = 2
+    
+    ctx.fillText(watermark.text, 0, 0)
+  } else if (watermark.type === 'image' && watermark.imageUrl) {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const scale = watermark.scale / 100
+        const imgWidth = img.width * scale
+        const imgHeight = img.height * scale
+        
+        const position = calculatePosition(width, height, watermark.position, {
+          width: imgWidth,
+          height: imgHeight
+        })
+        
+        ctx.translate(position.x, position.y)
+        ctx.rotate((watermark.rotation * Math.PI) / 180)
+        
+        ctx.drawImage(img, -imgWidth / 2, -imgHeight / 2, imgWidth, imgHeight)
+        
+        ctx.restore()
+        resolve(canvas)
+      }
+      img.onerror = () => {
+        ctx.restore()
+        resolve(canvas)
+      }
+      img.src = watermark.imageUrl
+    })
+  }
+  
+  ctx.restore()
+  return canvas
+}
+
+const calculatePosition = (canvasWidth, canvasHeight, position, elementSize) => {
+  const padding = 20
+  const { width, height } = elementSize
+  
+  const positions = {
+    'top-left': { x: padding + width / 2, y: padding + height / 2 },
+    'top-center': { x: canvasWidth / 2, y: padding + height / 2 },
+    'top-right': { x: canvasWidth - padding - width / 2, y: padding + height / 2 },
+    'middle-left': { x: padding + width / 2, y: canvasHeight / 2 },
+    'center': { x: canvasWidth / 2, y: canvasHeight / 2 },
+    'middle-right': { x: canvasWidth - padding - width / 2, y: canvasHeight / 2 },
+    'bottom-left': { x: padding + width / 2, y: canvasHeight - padding - height / 2 },
+    'bottom-center': { x: canvasWidth / 2, y: canvasHeight - padding - height / 2 },
+    'bottom-right': { x: canvasWidth - padding - width / 2, y: canvasHeight - padding - height / 2 }
+  }
+  
+  return positions[position] || positions['bottom-right']
+}
+
+export const resizeCanvas = (canvas, targetWidth, targetHeight, maintainAspectRatio = true) => {
+  if (!targetWidth && !targetHeight) return canvas
+  
+  const sourceWidth = canvas.width
+  const sourceHeight = canvas.height
+  
+  let newWidth = targetWidth || sourceWidth
+  let newHeight = targetHeight || sourceHeight
+  
+  if (maintainAspectRatio && targetWidth && targetHeight) {
+    const sourceRatio = sourceWidth / sourceHeight
+    const targetRatio = targetWidth / targetHeight
+    
+    if (sourceRatio > targetRatio) {
+      newHeight = targetWidth / sourceRatio
+      newWidth = targetWidth
+    } else {
+      newWidth = targetHeight * sourceRatio
+      newHeight = targetHeight
+    }
+  } else if (maintainAspectRatio) {
+    const ratio = sourceWidth / sourceHeight
+    if (targetWidth) {
+      newHeight = targetWidth / ratio
+    } else if (targetHeight) {
+      newWidth = targetHeight * ratio
+    }
+  }
+  
+  const resizedCanvas = document.createElement('canvas')
+  resizedCanvas.width = newWidth
+  resizedCanvas.height = newHeight
+  
+  const ctx = resizedCanvas.getContext('2d')
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(canvas, 0, 0, sourceWidth, sourceHeight, 0, 0, newWidth, newHeight)
+  
+  return resizedCanvas
+}
+
 export const createZipFromImages = async (images, filenames) => {
   const zip = new JSZip()
   

@@ -10,6 +10,22 @@ export const useSettingsStore = defineStore('settings', () => {
   const outputQuality = ref(90)
   const namingTemplate = ref('{original}_{index}')
   const presetTemplate = ref(null)
+  const outputWidth = ref(null)
+  const outputHeight = ref(null)
+  const maintainAspectRatio = ref(true)
+  
+  const watermark = ref({
+    enabled: false,
+    type: 'text',
+    text: '水印',
+    fontSize: 24,
+    color: '#ffffff',
+    opacity: 50,
+    position: 'bottom-right',
+    rotation: 0,
+    imageUrl: null,
+    scale: 30
+  })
 
   const aspectRatios = [
     { label: '自由', value: 'free' },
@@ -65,7 +81,25 @@ export const useSettingsStore = defineStore('settings', () => {
     presetTemplate.value = preset
     if (preset) {
       aspectRatio.value = preset.aspectRatio
+      outputWidth.value = preset.width
+      outputHeight.value = preset.height
     }
+  }
+
+  const setOutputWidth = (width) => {
+    outputWidth.value = width > 0 ? width : null
+  }
+
+  const setOutputHeight = (height) => {
+    outputHeight.value = height > 0 ? height : null
+  }
+
+  const setMaintainAspectRatio = (value) => {
+    maintainAspectRatio.value = value
+  }
+
+  const updateWatermark = (updates) => {
+    watermark.value = { ...watermark.value, ...updates }
   }
 
   const generateFileName = (originalName, index) => {
@@ -84,6 +118,10 @@ export const useSettingsStore = defineStore('settings', () => {
     outputQuality,
     namingTemplate,
     presetTemplate,
+    outputWidth,
+    outputHeight,
+    maintainAspectRatio,
+    watermark,
     aspectRatios,
     presetTemplates,
     setGridRows,
@@ -94,6 +132,10 @@ export const useSettingsStore = defineStore('settings', () => {
     setOutputQuality,
     setNamingTemplate,
     setPresetTemplate,
+    setOutputWidth,
+    setOutputHeight,
+    setMaintainAspectRatio,
+    updateWatermark,
     generateFileName
   }
 })

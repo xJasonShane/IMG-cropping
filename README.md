@@ -6,41 +6,56 @@
 
 ### 核心功能
 
-- 图片上传：支持拖放上传和文件选择，支持 JPG、PNG、WebP 格式
-- 裁剪功能：集成 Cropper.js，支持自由裁剪和预设比例
-- 网格裁剪：可设置 1-20 行/列的网格批量裁剪
-- 批量处理：支持同时处理多张图片并打包下载
+- **图片上传**：支持拖放上传和文件选择，支持 JPG、PNG、WebP 格式
+- **裁剪功能**：集成 Cropper.js，支持自由裁剪和预设比例
+- **网格裁剪**：可设置 1-20 行/列的网格批量裁剪
+- **批量处理**：支持同时处理多张图片并打包下载
+- **输出尺寸**：支持自定义输出图片尺寸，可保持宽高比
 
 ### 编辑功能
 
-- 图片旋转：支持 90 度旋转
-- 图片翻转：支持水平和垂直翻转
-- 历史记录：支持撤销/重做操作
-- 图片滤镜：亮度、对比度、饱和度、灰度、模糊
+- **图片旋转**：支持 90 度旋转
+- **图片翻转**：支持水平和垂直翻转
+- **历史记录**：支持撤销/重做操作（Ctrl+Z / Ctrl+Y）
+- **图片滤镜**：亮度、对比度、饱和度、灰度、模糊
+- **水印功能**：支持文字和图片水印，可设置位置、透明度、旋转角度
 
 ### 输出设置
 
-- 输出格式：JPG、PNG、WebP
-- 质量设置：10-100% 可调
-- 命名规则：支持自定义命名模板
-- 预设模板：社交媒体头像、证件照等常用尺寸
+- **输出格式**：PNG、JPG、WebP
+- **质量设置**：10-100% 可调
+- **命名规则**：支持自定义命名模板
+- **预设模板**：社交媒体头像、证件照等常用尺寸
 
 ### UI/UX
 
-- 响应式设计：支持桌面端和移动端
-- 深色模式：自动适配系统主题
-- 流畅动画：优雅的交互动画和过渡效果
-- 直观界面：清晰的功能分区和操作反馈
+- **响应式设计**：支持桌面端和移动端
+- **深色模式**：自动适配系统主题，可手动切换
+- **流畅动画**：优雅的交互动画和过渡效果
+- **直观界面**：清晰的功能分区和操作反馈
+- **快捷键支持**：丰富的快捷键操作
+- **Toast 通知**：操作结果即时反馈
+- **确认对话框**：防止误操作
+
+### 快捷键
+
+| 快捷键 | 功能 |
+|--------|------|
+| Ctrl+Z | 撤销 |
+| Ctrl+Y | 重做 |
+| Ctrl+S | 下载当前裁剪 |
+| Ctrl+U | 上传图片 |
+| ? | 显示快捷键帮助 |
 
 ## 技术栈
 
-- 前端框架：Vue 3 (Composition API)
-- 构建工具：Vite
-- UI 框架：Tailwind CSS
-- 图片处理：Cropper.js
-- 状态管理：Pinia
-- 路由：Vue Router
-- 打包工具：JSZip
+- **前端框架**：Vue 3 (Composition API)
+- **构建工具**：Vite
+- **UI 框架**：Tailwind CSS v4
+- **图片处理**：Cropper.js
+- **状态管理**：Pinia
+- **路由**：Vue Router
+- **打包工具**：JSZip
 
 ## 快速开始
 
@@ -66,6 +81,12 @@ npm run build
 
 ```bash
 npm run preview
+```
+
+### 运行测试
+
+```bash
+npm run test
 ```
 
 ## 部署
@@ -104,28 +125,35 @@ npm run preview
 IMG-cropping/
 ├── src/
 │   ├── components/       # Vue 组件
-│   │   ├── Header.vue
-│   │   ├── ImageUpload.vue
-│   │   ├── ImageCropper.vue
-│   │   ├── ImageList.vue
-│   │   ├── SettingsPanel.vue
-│   │   ├── FiltersPanel.vue
-│   │   └── LazyImage.vue
-│   ├── composables/      # 组合式函数
+│   │   ├── Header.vue          # 页面头部
+│   │   ├── ImageUpload.vue     # 图片上传组件
+│   │   ├── ImageCropper.vue    # 图片裁剪组件
+│   │   ├── ImageList.vue       # 图片列表组件
+│   │   ├── ImageInfo.vue       # 图片信息面板
+│   │   ├── SettingsPanel.vue   # 设置面板
+│   │   ├── FiltersPanel.vue    # 滤镜面板
+│   │   ├── WatermarkPanel.vue  # 水印面板
+│   │   ├── Toast.vue           # 通知组件
+│   │   ├── ConfirmDialog.vue   # 确认对话框
+│   │   └── ShortcutsHelp.vue   # 快捷键帮助
 │   ├── stores/          # Pinia 状态管理
-│   │   ├── image.js
-│   │   └── settings.js
+│   │   ├── image.js            # 图片状态
+│   │   └── settings.js         # 设置状态
 │   ├── utils/           # 工具函数
-│   │   ├── helpers.js
-│   │   └── imageProcessing.js
+│   │   ├── helpers.js          # 通用工具函数
+│   │   └── imageProcessing.js  # 图片处理函数
 │   ├── workers/         # Web Workers
-│   │   └── imageWorker.js
+│   │   └── imageWorker.js      # 图片处理 Worker
 │   ├── views/           # 页面组件
-│   │   └── Home.vue
+│   │   └── Home.vue            # 主页面
 │   ├── assets/          # 静态资源
 │   ├── App.vue
 │   ├── main.js
 │   └── style.css
+├── tests/               # 测试文件
+│   ├── helpers.test.js
+│   ├── imageStore.test.js
+│   └── settingsStore.test.js
 ├── public/
 ├── .github/workflows/   # GitHub Actions
 ├── dist/                # 构建输出
@@ -169,12 +197,19 @@ IMG-cropping/
 2. 使用预设按钮快速应用复古或黑白效果
 3. 滤镜会实时应用到当前图片
 
+### 添加水印
+
+1. 在水印面板启用水印功能
+2. 选择文字或图片水印类型
+3. 设置透明度、位置、旋转角度等参数
+4. 导出时水印会自动应用到图片
+
 ## 性能优化
 
-- 代码分割：将第三方库分离到独立 chunk
-- 懒加载：图片使用 Intersection Observer 实现懒加载
-- Web Worker：图片处理在后台线程执行，不阻塞 UI
-- 构建优化：使用 Terser 压缩代码，移除 console
+- **代码分割**：将第三方库分离到独立 chunk
+- **懒加载**：图片使用 Intersection Observer 实现懒加载
+- **Web Worker**：图片处理在后台线程执行，不阻塞 UI
+- **构建优化**：使用 Terser 压缩代码，移除 console
 
 ## 浏览器支持
 
