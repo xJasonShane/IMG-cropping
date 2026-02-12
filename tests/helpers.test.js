@@ -17,12 +17,12 @@ describe('Helper Functions', () => {
 
   describe('validateImageFile', () => {
     it('should accept valid image types', () => {
-      const validFile = new File([''], 'test.jpg', { type: 'image/jpeg' })
+      const validFile = new File(['test content'], 'test.jpg', { type: 'image/jpeg' })
       expect(() => validateImageFile(validFile)).not.toThrow()
     })
 
     it('should reject invalid file types', () => {
-      const invalidFile = new File([''], 'test.txt', { type: 'text/plain' })
+      const invalidFile = new File(['test content'], 'test.txt', { type: 'text/plain' })
       expect(() => validateImageFile(invalidFile)).toThrow('仅支持 JPG、PNG、WebP 格式的图片')
     })
 

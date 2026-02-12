@@ -1,16 +1,36 @@
 <template>
   <div class="cropper-container">
     <div class="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden" :style="{ height: height }">
+      <div v-if="isLoading" class="flex flex-col items-center justify-center h-full text-gray-500">
+        <div class="loading-spinner mb-4"></div>
+        <span class="text-sm">加载图片中...</span>
+      </div>
+      
+      <div v-else-if="loadError" class="flex flex-col items-center justify-center h-full text-red-500">
+        <svg class="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="text-sm text-center px-4">{{ loadError }}</span>
+        <button @click="retryLoad" class="mt-4 btn-primary text-sm px-4 py-2">
+          重试
+        </button>
+      </div>
+      
       <img
-        v-if="image && image.dataUrl"
+        v-else-if="image && image.dataUrl"
         ref="imageRef"
         :src="image.dataUrl"
         :alt="image.name"
         class="max-w-full"
-        @load="initCropper"
+        @load="handleImageLoad"
+        @error="handleImageError"
       />
-      <div v-else class="flex items-center justify-center h-full text-gray-500">
-        <span>加载图片中...</span>
+      
+      <div v-else class="flex flex-col items-center justify-center h-full text-gray-500">
+        <svg class="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        <span class="text-sm">请选择图片进行预览</span>
       </div>
     </div>
     
@@ -73,36 +93,62 @@ const settingsStore = useSettingsStore()
 
 const imageRef = ref(null)
 const cropperInstance = ref(null)
+const isLoading = ref(false)
+const loadError = ref(null)
+
+const handleImageLoad = () => {
+  isLoading.value = false
+  loadError.value = null
+  initCropper()
+}
+
+const handleImageError = (e) => {
+  isLoading.value = false
+  loadError.value = '图片加载失败，请检查文件格式或大小'
+  console.error('Image load error:', e)
+}
+
+const retryLoad = () => {
+  if (props.image && props.image.dataUrl) {
+    loadError.value = null
+    isLoading.value = true
+  }
+}
 
 const initCropper = () => {
-  if (!imageRef.value) return
+  if (!imageRef.value || !imageRef.value.complete) return
   
   if (cropperInstance.value) {
     cropperInstance.value.destroy()
     cropperInstance.value = null
   }
 
-  cropperInstance.value = new Cropper(imageRef.value, {
-    aspectRatio: parseAspectRatio(settingsStore.aspectRatio),
-    viewMode: 1,
-    dragMode: 'move',
-    autoCropArea: 0.8,
-    restore: false,
-    guides: true,
-    center: true,
-    highlight: false,
-    cropBoxMovable: true,
-    cropBoxResizable: true,
-    toggleDragModeOnDblclick: false,
-    background: false,
-    ready: () => {
-      imageStore.setCropperInstance(cropperInstance.value)
-      emit('ready', cropperInstance.value)
-    },
-    crop: () => {
-      emit('crop', cropperInstance.value)
-    }
-  })
+  try {
+    cropperInstance.value = new Cropper(imageRef.value, {
+      aspectRatio: parseAspectRatio(settingsStore.aspectRatio),
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 0.8,
+      restore: false,
+      guides: true,
+      center: true,
+      highlight: false,
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      toggleDragModeOnDblclick: false,
+      background: false,
+      ready: () => {
+        imageStore.setCropperInstance(cropperInstance.value)
+        emit('ready', cropperInstance.value)
+      },
+      crop: () => {
+        emit('crop', cropperInstance.value)
+      }
+    })
+  } catch (error) {
+    console.error('Cropper initialization error:', error)
+    loadError.value = '图片预览初始化失败，请刷新页面重试'
+  }
 }
 
 const rotateLeft = () => {
@@ -151,12 +197,18 @@ const updateAspectRatio = () => {
 }
 
 watch(() => settingsStore.aspectRatio, updateAspectRatio)
-watch(() => props.image, () => {
-  nextTick(() => {
-    if (imageRef.value) {
-      initCropper()
-    }
-  })
+watch(() => props.image, (newImage, oldImage) => {
+  if (newImage && newImage.id !== oldImage?.id) {
+    loadError.value = null
+    isLoading.value = true
+    
+    nextTick(() => {
+      if (imageRef.value && imageRef.value.complete) {
+        isLoading.value = false
+        initCropper()
+      }
+    })
+  }
 }, { deep: true })
 
 onBeforeUnmount(() => {

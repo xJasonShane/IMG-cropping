@@ -55,6 +55,7 @@ const emit = defineEmits(['upload'])
 const imageStore = useImageStore()
 const fileInput = ref(null)
 const isDragging = ref(false)
+const isProcessing = ref(false)
 
 const handleDragOver = () => {
   isDragging.value = true
@@ -71,7 +72,9 @@ const handleDrop = async (e) => {
 }
 
 const triggerFileInput = () => {
-  fileInput.value?.click()
+  if (!isProcessing.value) {
+    fileInput.value?.click()
+  }
 }
 
 const handleFileSelect = async (e) => {
@@ -80,18 +83,37 @@ const handleFileSelect = async (e) => {
   e.target.value = ''
 }
 
+const showError = (message) => {
+  const errorDiv = document.createElement('div')
+  errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse'
+  errorDiv.textContent = message
+  document.body.appendChild(errorDiv)
+  setTimeout(() => {
+    document.body.removeChild(errorDiv)
+  }, 3000)
+}
+
 const processFiles = async (files) => {
+  if (isProcessing.value) return
+  
   const imageFiles = files.filter(file => file.type.startsWith('image/'))
   
   if (imageFiles.length === 0) {
-    alert('请选择有效的图片文件')
+    showError('请选择有效的图片文件（JPG、PNG、WebP）')
     return
   }
 
+  isProcessing.value = true
+  
   for (const file of imageFiles) {
     try {
       validateImageFile(file)
+      
       const dataUrl = await readFileAsDataURL(file)
+      
+      if (!dataUrl || dataUrl === 'data:,') {
+        throw new Error('文件读取失败，请重试')
+      }
       
       const image = {
         id: generateId(),
@@ -112,8 +134,11 @@ const processFiles = async (files) => {
       imageStore.addImage(image)
       emit('upload', image)
     } catch (error) {
-      alert(`${file.name}: ${error.message}`)
+      console.error('File processing error:', error)
+      showError(`${file.name}: ${error.message}`)
     }
   }
+  
+  isProcessing.value = false
 }
 </script>
