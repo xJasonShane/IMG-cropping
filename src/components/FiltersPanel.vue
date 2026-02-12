@@ -90,31 +90,43 @@
       </div>
     </div>
     
-    <div class="flex space-x-2">
+    <div class="flex flex-wrap gap-2">
       <button
         @click="resetFilters"
-        class="flex-1 btn-secondary"
+        class="flex-1 btn-secondary text-sm"
       >
-        重置滤镜
+        重置
       </button>
       <button
         @click="applyPreset('vintage')"
-        class="flex-1 btn-primary"
+        class="flex-1 btn-primary text-sm"
       >
         复古
       </button>
       <button
         @click="applyPreset('bw')"
-        class="flex-1 btn-primary"
+        class="flex-1 btn-primary text-sm"
       >
         黑白
+      </button>
+      <button
+        @click="applyPreset('warm')"
+        class="flex-1 btn-primary text-sm"
+      >
+        暖色
+      </button>
+      <button
+        @click="applyPreset('cool')"
+        class="flex-1 btn-primary text-sm"
+      >
+        冷色
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useImageStore } from '../stores/image'
 
 const props = defineProps({
@@ -134,16 +146,20 @@ const filters = ref({
   blur: 0
 })
 
+const filterStyle = computed(() => {
+  return `brightness(${filters.value.brightness}%) contrast(${filters.value.contrast}%) saturate(${filters.value.saturation}%) grayscale(${filters.value.grayscale}%) blur(${filters.value.blur}px)`
+})
+
 const applyFilters = () => {
   if (!props.cropper) return
   
-  const canvas = props.cropper.getCroppedCanvas()
-  const ctx = canvas.getContext('2d')
-  
-  ctx.filter = `brightness(${filters.value.brightness}%) contrast(${filters.value.contrast}%) saturate(${filters.value.saturation}%) grayscale(${filters.value.grayscale}%) blur(${filters.value.blur}px)`
-  
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  ctx.putImageData(imageData, 0, 0)
+  const cropperContainer = props.cropper.container
+  if (cropperContainer) {
+    const cropperCanvas = cropperContainer.querySelector('.cropper-canvas img')
+    if (cropperCanvas) {
+      cropperCanvas.style.filter = filterStyle.value
+    }
+  }
   
   const currentImage = imageStore.currentImage
   if (currentImage) {
@@ -182,6 +198,24 @@ const applyPreset = (preset) => {
         blur: 0
       }
       break
+    case 'warm':
+      filters.value = {
+        brightness: 105,
+        contrast: 95,
+        saturation: 120,
+        grayscale: 0,
+        blur: 0
+      }
+      break
+    case 'cool':
+      filters.value = {
+        brightness: 100,
+        contrast: 110,
+        saturation: 90,
+        grayscale: 0,
+        blur: 0
+      }
+      break
   }
   applyFilters()
 }
@@ -191,6 +225,12 @@ watch(() => imageStore.currentImage, (newImage) => {
     filters.value = { ...newImage.filters }
   } else {
     resetFilters()
+  }
+}, { immediate: true })
+
+watch(() => props.cropper, (newCropper) => {
+  if (newCropper) {
+    applyFilters()
   }
 })
 </script>

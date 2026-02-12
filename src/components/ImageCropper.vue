@@ -35,6 +35,20 @@
     </div>
     
     <div class="flex items-center justify-center space-x-4 mt-4">
+      <button @click="zoomIn" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="放大">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+        </svg>
+      </button>
+      
+      <button @click="zoomOut" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="缩小">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"></path>
+        </svg>
+      </button>
+      
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+      
       <button @click="rotateLeft" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="向左旋转">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
@@ -47,6 +61,8 @@
         </svg>
       </button>
       
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+      
       <button @click="flipHorizontal" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="水平翻转">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
@@ -58,6 +74,8 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
         </svg>
       </button>
+      
+      <div class="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
       
       <button @click="reset" class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="重置">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,6 +169,18 @@ const initCropper = () => {
   }
 }
 
+const zoomIn = () => {
+  if (cropperInstance.value) {
+    cropperInstance.value.zoom(0.1)
+  }
+}
+
+const zoomOut = () => {
+  if (cropperInstance.value) {
+    cropperInstance.value.zoom(-0.1)
+  }
+}
+
 const rotateLeft = () => {
   if (cropperInstance.value) {
     cropperInstance.value.rotate(-90)
@@ -220,6 +250,8 @@ onBeforeUnmount(() => {
 
 defineExpose({
   cropper: cropperInstance,
+  zoomIn,
+  zoomOut,
   rotateLeft,
   rotateRight,
   flipHorizontal,
