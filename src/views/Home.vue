@@ -1,17 +1,12 @@
 <template>
   <div class="home min-h-screen">
     <div class="mb-8">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-            图片裁剪工具
-          </h2>
-          <p class="text-gray-600 dark:text-gray-400">
-            上传图片，设置参数，一键裁剪并下载
-          </p>
-        </div>
-        <ShortcutsHelp />
-      </div>
+      <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+        图片分割工具
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400">
+        上传图片，设置分割参数，一键分割并下载
+      </p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -26,444 +21,334 @@
               </svg>
               {{ currentImage.name }}
             </h3>
-            <div class="flex space-x-2">
-              <button
-                @click="undo"
-                :disabled="!canUndo"
-                class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="撤销 (Ctrl+Z)"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
-                </svg>
-              </button>
-              <button
-                @click="redo"
-                :disabled="!canRedo"
-                class="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                title="重做 (Ctrl+Y)"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 10h-10a8 8 0 00-8 8v2M21 10l-6 6m6-6l-6-6"></path>
-                </svg>
-              </button>
-            </div>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{ imageWidth }} × {{ imageHeight }} px
+            </span>
           </div>
           
-          <ImageCropper ref="cropperRef" :image="currentImage" :key="currentImage?.id" />
+          <ImagePreview 
+            ref="previewRef" 
+            :image="currentImage" 
+            :rows="gridRows" 
+            :cols="gridCols"
+          />
           
           <div class="mt-6 flex flex-wrap gap-3">
             <button
-              @click="cropSingle"
-              class="btn-primary flex items-center space-x-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-              </svg>
-              <span>下载当前裁剪</span>
-            </button>
-            
-            <button
-              @click="cropGrid"
+              @click="splitImage"
+              :disabled="isProcessing"
               class="btn-primary flex items-center space-x-2"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
               </svg>
-              <span>裁剪网格 ({{ gridRows }}x{{ gridCols }})</span>
+              <span>{{ isProcessing ? `分割中 ${processingProgress}%` : '分割图片' }}</span>
             </button>
             
             <button
-              @click="cropAll"
-              :disabled="isProcessing"
-              class="btn-secondary flex items-center space-x-2"
+              v-if="splitPieces.length > 0"
+              @click="downloadAll"
+              class="btn-primary flex items-center space-x-2"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
               </svg>
-              <span>{{ isProcessing ? `处理中 ${processingProgress}%` : '批量裁剪所有图片' }}</span>
+              <span>下载全部 ({{ splitPieces.length }}张)</span>
             </button>
             
             <button
-              v-if="images.length > 1"
-              @click="exportAllOriginal"
-              class="btn-secondary flex items-center space-x-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-              </svg>
-              <span>导出所有原图</span>
-            </button>
-            
-            <button
-              @click="clearAll"
+              @click="clearImage"
               class="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center space-x-2"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
               </svg>
-              <span>清空全部</span>
+              <span>清除图片</span>
             </button>
           </div>
         </div>
         
-        <ImageInfo v-if="currentImage" :image="currentImage" :cropper="cropperRef?.cropper" />
-      </div>
-      
-      <div class="space-y-6">
-        <SettingsPanel />
-        
-        <WatermarkPanel />
-        
-        <FiltersPanel v-if="currentImage" :cropper="cropperRef?.cropper" />
-        
-        <div v-if="images.length > 0" class="card">
+        <div v-if="splitPieces.length > 0" class="card">
           <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
             <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
             </svg>
-            图片列表 ({{ images.length }})
+            分割结果 ({{ splitPieces.length }} 张)
           </h3>
-          <ImageList @remove="confirmRemoveImage" />
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div
+              v-for="(piece, index) in splitPieces"
+              :key="index"
+              class="relative group"
+            >
+              <div class="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                <img
+                  :src="piece.dataUrl"
+                  :alt="`分割图片 ${index + 1}`"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <div class="mt-2 flex items-center justify-between">
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  #{{ index + 1 }}
+                </span>
+                <button
+                  @click="downloadPiece(index)"
+                  class="p-1 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
+                  title="下载此图片"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="space-y-6">
+        <SettingsPanel 
+          v-model:rows="gridRows" 
+          v-model:cols="gridCols"
+          v-model:format="outputFormat"
+          v-model:quality="outputQuality"
+          v-model:namingTemplate="namingTemplate"
+        />
+        
+        <div v-if="currentImage" class="card">
+          <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
+            <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            图片信息
+          </h3>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+              <span class="text-sm text-gray-500 dark:text-gray-400">文件名</span>
+              <span class="text-sm font-medium text-gray-800 dark:text-white truncate max-w-[150px]" :title="currentImage.name">
+                {{ currentImage.name }}
+              </span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+              <span class="text-sm text-gray-500 dark:text-gray-400">原始尺寸</span>
+              <span class="text-sm font-medium text-gray-800 dark:text-white">
+                {{ imageWidth }} × {{ imageHeight }} px
+              </span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+              <span class="text-sm text-gray-500 dark:text-gray-400">文件大小</span>
+              <span class="text-sm font-medium text-gray-800 dark:text-white">
+                {{ formatFileSize(currentImage.size) }}
+              </span>
+            </div>
+            <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
+              <span class="text-sm text-gray-500 dark:text-gray-400">分割数量</span>
+              <span class="text-sm font-medium text-primary-500">
+                {{ gridRows * gridCols }} 张
+              </span>
+            </div>
+            <div class="flex justify-between items-center py-2">
+              <span class="text-sm text-gray-500 dark:text-gray-400">每块尺寸</span>
+              <span class="text-sm font-medium text-gray-800 dark:text-white">
+                {{ pieceWidth }} × {{ pieceHeight }} px
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     
-    <div class="fixed bottom-4 left-4 space-y-2 z-40">
-      <Toast
-        v-for="toast in toasts"
-        :key="toast.id"
-        :message="toast.message"
-        :type="toast.type"
-        :duration="toast.duration"
-        position="bottom-left"
-        @close="removeToast(toast.id)"
-      />
-    </div>
-    
-    <ConfirmDialog
-      v-model:visible="showConfirm"
-      :title="confirmTitle"
-      :message="confirmMessage"
-      :type="confirmType"
-      @confirm="handleConfirm"
-      @cancel="handleCancel"
+    <Toast
+      v-if="toast.show"
+      :message="toast.message"
+      :type="toast.type"
+      @close="toast.show = false"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useImageStore } from '../stores/image'
-import { useSettingsStore } from '../stores/settings'
-import { 
-  cropImage, 
-  cropGrid as cropGridUtil, 
-  createZipFromImages, 
-  downloadZip, 
-  canvasToBlob,
-  applyWatermark,
-  resizeCanvas
-} from '../utils/imageProcessing'
-import { downloadImage } from '../utils/helpers'
+import { ref, computed, watch } from 'vue'
+import { formatFileSize } from '../utils/helpers'
+import { splitImageToPieces, downloadZip, canvasToBlob } from '../utils/imageProcessing'
 import JSZip from 'jszip'
 import ImageUpload from '../components/ImageUpload.vue'
-import ImageCropper from '../components/ImageCropper.vue'
+import ImagePreview from '../components/ImagePreview.vue'
 import SettingsPanel from '../components/SettingsPanel.vue'
-import FiltersPanel from '../components/FiltersPanel.vue'
-import ImageList from '../components/ImageList.vue'
-import ImageInfo from '../components/ImageInfo.vue'
-import WatermarkPanel from '../components/WatermarkPanel.vue'
 import Toast from '../components/Toast.vue'
-import ConfirmDialog from '../components/ConfirmDialog.vue'
-import ShortcutsHelp from '../components/ShortcutsHelp.vue'
 
-const imageStore = useImageStore()
-const settingsStore = useSettingsStore()
-
-const cropperRef = ref(null)
+const currentImage = ref(null)
+const imageWidth = ref(0)
+const imageHeight = ref(0)
+const splitPieces = ref([])
 const isProcessing = ref(false)
 const processingProgress = ref(0)
-const toasts = ref([])
-const toastId = ref(0)
+const previewRef = ref(null)
 
-const showConfirm = ref(false)
-const confirmTitle = ref('')
-const confirmMessage = ref('')
-const confirmType = ref('info')
-const confirmCallback = ref(null)
+const gridRows = ref(2)
+const gridCols = ref(2)
+const outputFormat = ref('png')
+const outputQuality = ref(90)
+const namingTemplate = ref('{original}_{index}')
 
-const currentImage = computed(() => imageStore.currentImage)
-const images = computed(() => imageStore.images)
-const canUndo = computed(() => imageStore.canUndo)
-const canRedo = computed(() => imageStore.canRedo)
-const gridRows = computed(() => settingsStore.gridRows)
-const gridCols = computed(() => settingsStore.gridCols)
+const toast = ref({
+  show: false,
+  message: '',
+  type: 'success'
+})
+
+const pieceWidth = computed(() => {
+  if (!imageWidth.value) return 0
+  return Math.round(imageWidth.value / gridCols.value)
+})
+
+const pieceHeight = computed(() => {
+  if (!imageHeight.value) return 0
+  return Math.round(imageHeight.value / gridRows.value)
+})
 
 const handleUpload = (image) => {
-  showNotification(`${image.name} 上传成功`, 'success')
-}
-
-const showNotification = (message, type = 'success', duration = 3000) => {
-  const id = toastId.value++
-  toasts.value.push({ id, message, type, duration })
-}
-
-const removeToast = (id) => {
-  const index = toasts.value.findIndex(t => t.id === id)
-  if (index > -1) {
-    toasts.value.splice(index, 1)
-  }
-}
-
-const showConfirmDialog = (title, message, type, callback) => {
-  confirmTitle.value = title
-  confirmMessage.value = message
-  confirmType.value = type
-  confirmCallback.value = callback
-  showConfirm.value = true
-}
-
-const handleConfirm = () => {
-  if (confirmCallback.value) {
-    confirmCallback.value()
-  }
-  confirmCallback.value = null
-}
-
-const handleCancel = () => {
-  confirmCallback.value = null
-}
-
-const undo = () => {
-  imageStore.undo()
-}
-
-const redo = () => {
-  imageStore.redo()
-}
-
-const processCanvas = async (canvas) => {
-  let processedCanvas = canvas
+  currentImage.value = image
+  splitPieces.value = []
   
-  if (settingsStore.outputWidth || settingsStore.outputHeight) {
-    processedCanvas = resizeCanvas(
-      processedCanvas,
-      settingsStore.outputWidth,
-      settingsStore.outputHeight,
-      settingsStore.maintainAspectRatio
-    )
+  const img = new Image()
+  img.onload = () => {
+    imageWidth.value = img.width
+    imageHeight.value = img.height
   }
+  img.src = image.dataUrl
   
-  if (settingsStore.watermark.enabled) {
-    processedCanvas = await applyWatermark(processedCanvas, settingsStore.watermark)
-  }
-  
-  return processedCanvas
+  showToast(`${image.name} 上传成功`, 'success')
 }
 
-const cropSingle = async () => {
-  if (!cropperRef.value?.cropper) return
+const showToast = (message, type = 'success') => {
+  toast.value = { show: true, message, type }
+}
+
+const splitImage = async () => {
+  if (!currentImage.value) return
   
   try {
-    let canvas = cropImage(cropperRef.value.cropper, {
-      format: `image/${settingsStore.outputFormat}`,
-      quality: settingsStore.outputQuality / 100
+    isProcessing.value = true
+    processingProgress.value = 0
+    
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    
+    await new Promise((resolve, reject) => {
+      img.onload = resolve
+      img.onerror = reject
+      img.src = currentImage.value.dataUrl
     })
     
-    canvas = await processCanvas(canvas)
+    const pieces = []
+    const pieceW = Math.floor(img.width / gridCols.value)
+    const pieceH = Math.floor(img.height / gridRows.value)
     
-    const blob = await canvasToBlob(
-      canvas,
-      `image/${settingsStore.outputFormat}`,
-      settingsStore.outputQuality / 100
-    )
-    
-    const filename = settingsStore.generateFileName(currentImage.value.name, 0)
-    downloadImage(blob, `${filename}.${settingsStore.outputFormat}`)
-    showNotification('图片下载成功', 'success')
-  } catch (error) {
-    console.error('Crop error:', error)
-    showNotification('裁剪失败，请重试', 'error')
-  }
-}
-
-const cropGrid = async () => {
-  if (!cropperRef.value?.cropper) return
-  
-  try {
-    isProcessing.value = true
-    processingProgress.value = 0
-    
-    const pieces = cropGridUtil(
-      cropperRef.value.cropper,
-      gridRows.value,
-      gridCols.value
-    )
-    
-    processingProgress.value = 30
-    
-    const processedPieces = []
-    for (let i = 0; i < pieces.length; i++) {
-      const processed = await processCanvas(pieces[i])
-      processedPieces.push(processed)
-      processingProgress.value = 30 + Math.round((i / pieces.length) * 40)
-    }
-    
-    const filenames = processedPieces.map((_, index) => 
-      settingsStore.generateFileName(currentImage.value.name, index)
-    )
-    
-    const zip = await createZipFromImages(processedPieces, filenames)
-    downloadZip(zip, `${currentImage.value.name.replace(/\.[^/.]+$/, '')}_grid.zip`)
-    
-    processingProgress.value = 100
-    showNotification(`成功裁剪 ${pieces.length} 张图片`, 'success')
-  } catch (error) {
-    console.error('Grid crop error:', error)
-    showNotification('网格裁剪失败，请重试', 'error')
-  } finally {
-    isProcessing.value = false
-    processingProgress.value = 0
-  }
-}
-
-const cropAll = async () => {
-  if (images.value.length === 0) return
-  
-  try {
-    isProcessing.value = true
-    processingProgress.value = 0
-    
-    const allPieces = []
-    const allFilenames = []
-    const totalImages = images.value.length
-    
-    for (let i = 0; i < images.value.length; i++) {
-      const image = images.value[i]
-      imageStore.setCurrentImage(image)
-      
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      if (cropperRef.value?.cropper) {
-        const pieces = cropGridUtil(
-          cropperRef.value.cropper,
-          gridRows.value,
-          gridCols.value
+    for (let row = 0; row < gridRows.value; row++) {
+      for (let col = 0; col < gridCols.value; col++) {
+        const canvas = document.createElement('canvas')
+        canvas.width = pieceW
+        canvas.height = pieceH
+        const ctx = canvas.getContext('2d')
+        
+        ctx.drawImage(
+          img,
+          col * pieceW,
+          row * pieceH,
+          pieceW,
+          pieceH,
+          0,
+          0,
+          pieceW,
+          pieceH
         )
         
-        for (let j = 0; j < pieces.length; j++) {
-          const processed = await processCanvas(pieces[j])
-          allPieces.push(processed)
-          allFilenames.push(settingsStore.generateFileName(image.name, j))
-        }
+        const dataUrl = canvas.toDataURL(`image/${outputFormat.value}`, outputQuality.value / 100)
+        pieces.push({
+          canvas,
+          dataUrl,
+          row,
+          col,
+          index: row * gridCols.value + col
+        })
+        
+        processingProgress.value = Math.round(((row * gridCols.value + col + 1) / (gridRows.value * gridCols.value)) * 100)
       }
-      
-      processingProgress.value = Math.round(((i + 1) / totalImages) * 100)
     }
     
-    if (allPieces.length > 0) {
-      const zip = await createZipFromImages(allPieces, allFilenames)
-      downloadZip(zip, 'all_cropped_images.zip')
-      showNotification(`成功处理 ${allPieces.length} 张图片`, 'success')
-    }
+    splitPieces.value = pieces
+    showToast(`成功分割为 ${pieces.length} 张图片`, 'success')
   } catch (error) {
-    console.error('Batch crop error:', error)
-    showNotification('批量处理失败，请重试', 'error')
+    console.error('Split error:', error)
+    showToast('分割失败，请重试', 'error')
   } finally {
     isProcessing.value = false
     processingProgress.value = 0
   }
 }
 
-const exportAllOriginal = async () => {
-  if (images.value.length === 0) return
+const generateFileName = (index) => {
+  const originalName = currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
+  return namingTemplate.value
+    .replace('{original}', originalName)
+    .replace('{index}', String(index + 1).padStart(3, '0'))
+}
+
+const downloadPiece = async (index) => {
+  const piece = splitPieces.value[index]
+  if (!piece) return
+  
+  const blob = await canvasToBlob(piece.canvas, `image/${outputFormat.value}`, outputQuality.value / 100)
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${generateFileName(index)}.${outputFormat.value}`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  
+  showToast('图片下载成功', 'success')
+}
+
+const downloadAll = async () => {
+  if (splitPieces.value.length === 0) return
   
   try {
     isProcessing.value = true
     processingProgress.value = 0
     
     const zip = new JSZip()
-    const totalImages = images.value.length
     
-    for (let i = 0; i < images.value.length; i++) {
-      const image = images.value[i]
-      
-      const response = await fetch(image.dataUrl)
-      const blob = await response.blob()
-      
-      const filename = image.name
+    for (let i = 0; i < splitPieces.value.length; i++) {
+      const piece = splitPieces.value[i]
+      const blob = await canvasToBlob(piece.canvas, `image/${outputFormat.value}`, outputQuality.value / 100)
+      const filename = `${generateFileName(i)}.${outputFormat.value}`
       zip.file(filename, blob)
-      
-      processingProgress.value = Math.round(((i + 1) / totalImages) * 100)
+      processingProgress.value = Math.round(((i + 1) / splitPieces.value.length) * 100)
     }
     
     const zipBlob = await zip.generateAsync({ type: 'blob' })
-    downloadZip(zipBlob, 'all_original_images.zip')
-    showNotification(`成功导出 ${images.value.length} 张原图`, 'success')
+    const originalName = currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
+    downloadZip(zipBlob, `${originalName}_split.zip`)
+    
+    showToast(`成功下载 ${splitPieces.value.length} 张图片`, 'success')
   } catch (error) {
-    console.error('Export error:', error)
-    showNotification('导出失败，请重试', 'error')
+    console.error('Download error:', error)
+    showToast('下载失败，请重试', 'error')
   } finally {
     isProcessing.value = false
     processingProgress.value = 0
   }
 }
 
-const confirmRemoveImage = (imageId) => {
-  showConfirmDialog(
-    '删除图片',
-    '确定要删除这张图片吗？此操作无法撤销。',
-    'warning',
-    () => {
-      imageStore.removeImage(imageId)
-      showNotification('图片已删除', 'info')
-    }
-  )
+const clearImage = () => {
+  currentImage.value = null
+  imageWidth.value = 0
+  imageHeight.value = 0
+  splitPieces.value = []
+  showToast('已清除图片', 'info')
 }
-
-const clearAll = () => {
-  showConfirmDialog(
-    '清空全部',
-    `确定要清空所有 ${images.value.length} 张图片吗？此操作无法撤销。`,
-    'danger',
-    () => {
-      imageStore.images = []
-      imageStore.currentImage = null
-      imageStore.clearHistory()
-      showNotification('已清空所有图片', 'info')
-    }
-  )
-}
-
-const handleKeyboard = (e) => {
-  if (e.ctrlKey || e.metaKey) {
-    switch (e.key.toLowerCase()) {
-      case 'z':
-        e.preventDefault()
-        undo()
-        break
-      case 'y':
-        e.preventDefault()
-        redo()
-        break
-      case 's':
-        e.preventDefault()
-        if (currentImage.value) cropSingle()
-        break
-      case 'u':
-        e.preventDefault()
-        document.querySelector('.upload-zone')?.click()
-        break
-    }
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', handleKeyboard)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyboard)
-})
 </script>

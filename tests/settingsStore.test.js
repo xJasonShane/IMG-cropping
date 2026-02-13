@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useSettingsStore } from '../src/stores/settings'
 
 describe('Settings Store', () => {
@@ -10,11 +10,11 @@ describe('Settings Store', () => {
   it('should have default values', () => {
     const store = useSettingsStore()
 
-    expect(store.gridRows).toBe(1)
-    expect(store.gridCols).toBe(1)
-    expect(store.aspectRatio).toBe('free')
+    expect(store.gridRows).toBe(2)
+    expect(store.gridCols).toBe(2)
     expect(store.outputFormat).toBe('png')
     expect(store.outputQuality).toBe(90)
+    expect(store.namingTemplate).toBe('{original}_{index}')
   })
 
   it('should set grid rows', () => {
@@ -26,66 +26,62 @@ describe('Settings Store', () => {
 
   it('should clamp grid rows between 1 and 20', () => {
     const store = useSettingsStore()
-    store.setGridRows(25)
-
-    expect(store.gridRows).toBe(20)
-
+    
     store.setGridRows(0)
     expect(store.gridRows).toBe(1)
+    
+    store.setGridRows(25)
+    expect(store.gridRows).toBe(20)
   })
 
   it('should set grid cols', () => {
     const store = useSettingsStore()
-    store.setGridCols(10)
+    store.setGridCols(4)
 
-    expect(store.gridCols).toBe(10)
+    expect(store.gridCols).toBe(4)
   })
 
-  it('should set aspect ratio', () => {
+  it('should clamp grid cols between 1 and 20', () => {
     const store = useSettingsStore()
-    store.setAspectRatio('16:9')
-
-    expect(store.aspectRatio).toBe('16:9')
+    
+    store.setGridCols(0)
+    expect(store.gridCols).toBe(1)
+    
+    store.setGridCols(25)
+    expect(store.gridCols).toBe(20)
   })
 
   it('should set output format', () => {
     const store = useSettingsStore()
-    store.setOutputFormat('webp')
+    store.setOutputFormat('jpeg')
 
-    expect(store.outputFormat).toBe('webp')
+    expect(store.outputFormat).toBe('jpeg')
   })
 
   it('should set output quality', () => {
     const store = useSettingsStore()
-    store.setOutputQuality(75)
+    store.setOutputQuality(80)
 
-    expect(store.outputQuality).toBe(75)
+    expect(store.outputQuality).toBe(80)
   })
 
   it('should clamp output quality between 10 and 100', () => {
     const store = useSettingsStore()
-    store.setOutputQuality(150)
-
-    expect(store.outputQuality).toBe(100)
-
+    
     store.setOutputQuality(5)
     expect(store.outputQuality).toBe(10)
+    
+    store.setOutputQuality(150)
+    expect(store.outputQuality).toBe(100)
   })
 
   it('should generate filename with template', () => {
     const store = useSettingsStore()
-    store.setNamingTemplate('{original}_cropped_{index}')
-
-    const filename = store.generateFileName('test.jpg', 2)
-    expect(filename).toBe('test_cropped_003')
-  })
-
-  it('should have preset templates', () => {
-    const store = useSettingsStore()
-
-    expect(store.presetTemplates).toBeDefined()
-    expect(store.presetTemplates.length).toBeGreaterThan(0)
-    expect(store.presetTemplates[0]).toHaveProperty('name')
-    expect(store.presetTemplates[0]).toHaveProperty('aspectRatio')
+    
+    const filename = store.generateFileName('photo.jpg', 0)
+    expect(filename).toBe('photo_001')
+    
+    const filename2 = store.generateFileName('image.png', 9)
+    expect(filename2).toBe('image_010')
   })
 })
