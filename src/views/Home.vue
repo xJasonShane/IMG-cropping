@@ -11,7 +11,10 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2 space-y-6">
-        <ImageUpload @upload="handleUpload" />
+        <ImageUpload 
+          @upload="handleUpload" 
+          @image-selected="handleImageSelected"
+        />
         
         <div v-if="currentImage" class="card">
           <div class="flex items-center justify-between mb-4">
@@ -46,6 +49,18 @@
             </button>
             
             <button
+              v-if="uploadedImages.length > 1"
+              @click="splitAllImages"
+              :disabled="isProcessing"
+              class="btn-secondary flex items-center space-x-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
+              </svg>
+              <span>分割全部 ({{ uploadedImages.length }}张)</span>
+            </button>
+            
+            <button
               v-if="splitPieces.length > 0"
               @click="downloadAll"
               class="btn-primary flex items-center space-x-2"
@@ -54,16 +69,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
               </svg>
               <span>下载全部 ({{ splitPieces.length }}张)</span>
-            </button>
-            
-            <button
-              @click="clearImage"
-              class="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center space-x-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-              </svg>
-              <span>清除图片</span>
             </button>
           </div>
         </div>
@@ -115,6 +120,8 @@
           v-model:quality="outputQuality"
           v-model:namingTemplate="namingTemplate"
         />
+        
+        <HistoryPanel />
         
         <div v-if="currentImage" class="card">
           <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
@@ -169,22 +176,24 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { formatFileSize } from '../utils/helpers'
-import { splitImageToPieces, downloadZip, canvasToBlob } from '../utils/imageProcessing'
+import { downloadZip, canvasToBlob } from '../utils/imageProcessing'
 import JSZip from 'jszip'
 import ImageUpload from '../components/ImageUpload.vue'
 import ImagePreview from '../components/ImagePreview.vue'
 import SettingsPanel from '../components/SettingsPanel.vue'
 import Toast from '../components/Toast.vue'
+import HistoryPanel from '../components/HistoryPanel.vue'
+import { useHistoryStore } from '../stores/history'
 
 const currentImage = ref(null)
 const imageWidth = ref(0)
 const imageHeight = ref(0)
 const splitPieces = ref([])
+const uploadedImages = ref([])
 const isProcessing = ref(false)
 const processingProgress = ref(0)
-const previewRef = ref(null)
 
 const gridRows = ref(2)
 const gridCols = ref(2)
@@ -192,10 +201,16 @@ const outputFormat = ref('png')
 const outputQuality = ref(90)
 const namingTemplate = ref('{original}_{index}')
 
+const historyStore = useHistoryStore()
+
 const toast = ref({
   show: false,
   message: '',
   type: 'success'
+})
+
+onMounted(() => {
+  historyStore.loadFromLocalStorage()
 })
 
 const pieceWidth = computed(() => {
@@ -208,7 +223,15 @@ const pieceHeight = computed(() => {
   return Math.round(imageHeight.value / gridRows.value)
 })
 
+const showToast = (message, type = 'success') => {
+  toast.value = { show: true, message, type }
+}
+
 const handleUpload = (image) => {
+  uploadedImages.value.push(image)
+}
+
+const handleImageSelected = (image) => {
   currentImage.value = image
   splitPieces.value = []
   
@@ -218,12 +241,6 @@ const handleUpload = (image) => {
     imageHeight.value = img.height
   }
   img.src = image.dataUrl
-  
-  showToast(`${image.name} 上传成功`, 'success')
-}
-
-const showToast = (message, type = 'success') => {
-  toast.value = { show: true, message, type }
 }
 
 const splitImage = async () => {
@@ -279,6 +296,14 @@ const splitImage = async () => {
     }
     
     splitPieces.value = pieces
+    
+    historyStore.addHistoryItem({
+      imageName: currentImage.value.name,
+      rows: gridRows.value,
+      cols: gridCols.value,
+      pieceCount: pieces.length
+    })
+    
     showToast(`成功分割为 ${pieces.length} 张图片`, 'success')
   } catch (error) {
     console.error('Split error:', error)
@@ -289,10 +314,90 @@ const splitImage = async () => {
   }
 }
 
-const generateFileName = (index) => {
-  const originalName = currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
+const splitAllImages = async () => {
+  if (uploadedImages.value.length === 0) return
+  
+  try {
+    isProcessing.value = true
+    processingProgress.value = 0
+    
+    const allPieces = []
+    const totalImages = uploadedImages.value.length
+    
+    for (let i = 0; i < uploadedImages.value.length; i++) {
+      const image = uploadedImages.value[i]
+      
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve
+        img.onerror = reject
+        img.src = image.dataUrl
+      })
+      
+      const pieceW = Math.floor(img.width / gridCols.value)
+      const pieceH = Math.floor(img.height / gridRows.value)
+      
+      for (let row = 0; row < gridRows.value; row++) {
+        for (let col = 0; col < gridCols.value; col++) {
+          const canvas = document.createElement('canvas')
+          canvas.width = pieceW
+          canvas.height = pieceH
+          const ctx = canvas.getContext('2d')
+          
+          ctx.drawImage(
+            img,
+            col * pieceW,
+            row * pieceH,
+            pieceW,
+            pieceH,
+            0,
+            0,
+            pieceW,
+            pieceH
+          )
+          
+          const dataUrl = canvas.toDataURL(`image/${outputFormat.value}`, outputQuality.value / 100)
+          allPieces.push({
+            canvas,
+            dataUrl,
+            row,
+            col,
+            index: allPieces.length,
+            originalImageName: image.name
+          })
+        }
+      }
+      
+      processingProgress.value = Math.round(((i + 1) / totalImages) * 100)
+    }
+    
+    splitPieces.value = allPieces
+    
+    uploadedImages.value.forEach((image, index) => {
+      historyStore.addHistoryItem({
+        imageName: image.name,
+        rows: gridRows.value,
+        cols: gridCols.value,
+        pieceCount: gridRows.value * gridCols.value
+      })
+    })
+    
+    showToast(`成功分割 ${uploadedImages.value.length} 张图片，共 ${allPieces.length} 个分块`, 'success')
+  } catch (error) {
+    console.error('Split all error:', error)
+    showToast('批量分割失败，请重试', 'error')
+  } finally {
+    isProcessing.value = false
+    processingProgress.value = 0
+  }
+}
+
+const generateFileName = (index, originalName = null) => {
+  const name = originalName || currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
   return namingTemplate.value
-    .replace('{original}', originalName)
+    .replace('{original}', name.replace(/\.[^/.]+$/, ''))
     .replace('{index}', String(index + 1).padStart(3, '0'))
 }
 
@@ -304,7 +409,7 @@ const downloadPiece = async (index) => {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `${generateFileName(index)}.${outputFormat.value}`
+  link.download = `${generateFileName(index, piece.originalImageName)}.${outputFormat.value}`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
@@ -325,13 +430,13 @@ const downloadAll = async () => {
     for (let i = 0; i < splitPieces.value.length; i++) {
       const piece = splitPieces.value[i]
       const blob = await canvasToBlob(piece.canvas, `image/${outputFormat.value}`, outputQuality.value / 100)
-      const filename = `${generateFileName(i)}.${outputFormat.value}`
+      const filename = `${generateFileName(i, piece.originalImageName)}.${outputFormat.value}`
       zip.file(filename, blob)
       processingProgress.value = Math.round(((i + 1) / splitPieces.value.length) * 100)
     }
     
     const zipBlob = await zip.generateAsync({ type: 'blob' })
-    const originalName = currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
+    const originalName = currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'images'
     downloadZip(zipBlob, `${originalName}_split.zip`)
     
     showToast(`成功下载 ${splitPieces.value.length} 张图片`, 'success')
@@ -342,13 +447,5 @@ const downloadAll = async () => {
     isProcessing.value = false
     processingProgress.value = 0
   }
-}
-
-const clearImage = () => {
-  currentImage.value = null
-  imageWidth.value = 0
-  imageHeight.value = 0
-  splitPieces.value = []
-  showToast('已清除图片', 'info')
 }
 </script>
