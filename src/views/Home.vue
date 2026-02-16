@@ -162,10 +162,25 @@
               </button>
             </div>
           </div>
-          <div class="mt-1 text-center">
-            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">
-              #{{ index + 1 }}
-            </span>
+          <div class="mt-2 space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0">
+                #{{ index + 1 }}
+              </span>
+              <input
+                type="text"
+                :value="getDisplayFileName(index, piece.originalImageName)"
+                @input="handleFileNameInput(index, $event.target.value, piece.originalImageName)"
+                :class="getInputClass(index, piece.originalImageName)"
+                placeholder="输入文件名"
+              />
+            </div>
+            <p 
+              v-if="!validateFileName(getDisplayFileName(index, piece.originalImageName)).valid"
+              class="text-xs text-red-500"
+            >
+              {{ validateFileName(getDisplayFileName(index, piece.originalImageName)).error }}
+            </p>
           </div>
         </div>
       </div>
@@ -197,6 +212,7 @@ const splitPieces = ref([])
 const uploadedImages = ref([])
 const isProcessing = ref(false)
 const processingProgress = ref(0)
+const customFileNames = ref({})
 
 const gridRows = ref(2)
 const gridCols = ref(2)
@@ -244,6 +260,76 @@ const displayRows = computed(() => {
   return gridRows.value
 })
 
+const invalidChars = /[<>:"/\\|?*]/g
+
+const validateFileName = (name) => {
+  if (!name || name.trim() === '') {
+    return { valid: false, error: '文件名不能为空' }
+  }
+  
+  if (invalidChars.test(name)) {
+    return { valid: false, error: '文件名不能包含以下字符: < > : " / \\ | ? *' }
+  }
+  
+  if (name.length > 255) {
+    return { valid: false, error: '文件名不能超过255个字符' }
+  }
+  
+  return { valid: true, error: '' }
+}
+
+const getDefaultFileName = (index, originalName = null) => {
+  const name = originalName || currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
+  return namingTemplate.value
+    .replace('{original}', name.replace(/\.[^/.]+$/, ''))
+    .replace('{index}', String(index + 1).padStart(3, '0'))
+}
+
+const getCustomFileName = (index) => {
+  return customFileNames.value[index] || ''
+}
+
+const setCustomFileName = (index, value) => {
+  if (value && value.trim() !== '') {
+    customFileNames.value[index] = value.trim()
+  } else {
+    delete customFileNames.value[index]
+  }
+}
+
+const getDisplayFileName = (index, originalName = null) => {
+  const custom = getCustomFileName(index)
+  if (custom) {
+    return custom
+  }
+  return getDefaultFileName(index, originalName)
+}
+
+const getInputClass = (index, originalName = null) => {
+  let classes = 'flex-1 min-w-0 text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500'
+  
+  const hasCustom = getCustomFileName(index)
+  const validation = validateFileName(getDisplayFileName(index, originalName))
+  
+  if (!validation.valid) {
+    classes += ' border-red-500'
+  } else if (hasCustom) {
+    classes += ' border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+  }
+  
+  return classes
+}
+
+const handleFileNameInput = (index, value, originalName = null) => {
+  const defaultName = getDefaultFileName(index, originalName)
+  
+  if (value === defaultName || value === '') {
+    setCustomFileName(index, '')
+  } else {
+    setCustomFileName(index, value)
+  }
+}
+
 const showToast = (message, type = 'success') => {
   toast.value = { show: true, message, type }
 }
@@ -255,6 +341,7 @@ const handleUpload = (image) => {
 const handleImageSelected = (image) => {
   currentImage.value = image
   splitPieces.value = []
+  customFileNames.value = {}
   
   const img = new Image()
   img.onload = () => {
@@ -270,6 +357,7 @@ const splitImage = async () => {
   try {
     isProcessing.value = true
     processingProgress.value = 0
+    customFileNames.value = {}
     
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -398,6 +486,14 @@ const splitAllImages = async () => {
 }
 
 const generateFileName = (index, originalName = null) => {
+  const custom = getCustomFileName(index)
+  if (custom) {
+    const validation = validateFileName(custom)
+    if (validation.valid) {
+      return custom
+    }
+  }
+  
   const name = originalName || currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
   return namingTemplate.value
     .replace('{original}', name.replace(/\.[^/.]+$/, ''))
