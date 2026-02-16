@@ -78,34 +78,41 @@
             <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
             </svg>
-            分割结果 ({{ splitPieces.length }} 张)
+            分割结果 ({{ splitPieces.length }} 张) - {{ displayRows }} 行 × {{ displayCols }} 列
           </h3>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div 
+            class="grid gap-2"
+            :style="{
+              gridTemplateColumns: `repeat(${displayCols}, minmax(0, 1fr))`
+            }"
+          >
             <div
               v-for="(piece, index) in splitPieces"
               :key="index"
               class="relative group"
             >
-              <div class="aspect-square rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+              <div class="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
                 <img
                   :src="piece.dataUrl"
                   :alt="`分割图片 ${index + 1}`"
-                  class="w-full h-full object-cover"
+                  class="w-full h-auto"
                 />
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <button
+                    @click="downloadPiece(index)"
+                    class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                    title="下载此图片"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div class="mt-2 flex items-center justify-between">
-                <span class="text-xs text-gray-500 dark:text-gray-400">
+              <div class="mt-1 text-center">
+                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">
                   #{{ index + 1 }}
                 </span>
-                <button
-                  @click="downloadPiece(index)"
-                  class="p-1 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded transition-colors"
-                  title="下载此图片"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                  </svg>
-                </button>
               </div>
             </div>
           </div>
@@ -211,6 +218,30 @@ const pieceWidth = computed(() => {
 const pieceHeight = computed(() => {
   if (!imageHeight.value) return 0
   return Math.round(imageHeight.value / gridRows.value)
+})
+
+const displayCols = computed(() => {
+  if (splitPieces.value.length === 0) return 1
+  
+  const hasMultipleImages = splitPieces.value.some(p => p.originalImageName !== undefined)
+  
+  if (hasMultipleImages) {
+    return Math.min(4, Math.ceil(Math.sqrt(splitPieces.value.length)))
+  }
+  
+  return gridCols.value
+})
+
+const displayRows = computed(() => {
+  if (splitPieces.value.length === 0) return 1
+  
+  const hasMultipleImages = splitPieces.value.some(p => p.originalImageName !== undefined)
+  
+  if (hasMultipleImages) {
+    return Math.ceil(splitPieces.value.length / displayCols.value)
+  }
+  
+  return gridRows.value
 })
 
 const showToast = (message, type = 'success') => {
