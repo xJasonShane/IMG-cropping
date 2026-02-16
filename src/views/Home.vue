@@ -121,8 +121,6 @@
           v-model:namingTemplate="namingTemplate"
         />
         
-        <HistoryPanel />
-        
         <div v-if="currentImage" class="card">
           <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
             <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +174,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { formatFileSize } from '../utils/helpers'
 import { downloadZip, canvasToBlob } from '../utils/imageProcessing'
 import JSZip from 'jszip'
@@ -184,8 +182,6 @@ import ImageUpload from '../components/ImageUpload.vue'
 import ImagePreview from '../components/ImagePreview.vue'
 import SettingsPanel from '../components/SettingsPanel.vue'
 import Toast from '../components/Toast.vue'
-import HistoryPanel from '../components/HistoryPanel.vue'
-import { useHistoryStore } from '../stores/history'
 
 const currentImage = ref(null)
 const imageWidth = ref(0)
@@ -201,16 +197,10 @@ const outputFormat = ref('png')
 const outputQuality = ref(90)
 const namingTemplate = ref('{original}_{index}')
 
-const historyStore = useHistoryStore()
-
 const toast = ref({
   show: false,
   message: '',
   type: 'success'
-})
-
-onMounted(() => {
-  historyStore.loadFromLocalStorage()
 })
 
 const pieceWidth = computed(() => {
@@ -296,14 +286,6 @@ const splitImage = async () => {
     }
     
     splitPieces.value = pieces
-    
-    historyStore.addHistoryItem({
-      imageName: currentImage.value.name,
-      rows: gridRows.value,
-      cols: gridCols.value,
-      pieceCount: pieces.length
-    })
-    
     showToast(`成功分割为 ${pieces.length} 张图片`, 'success')
   } catch (error) {
     console.error('Split error:', error)
@@ -374,16 +356,6 @@ const splitAllImages = async () => {
     }
     
     splitPieces.value = allPieces
-    
-    uploadedImages.value.forEach((image, index) => {
-      historyStore.addHistoryItem({
-        imageName: image.name,
-        rows: gridRows.value,
-        cols: gridCols.value,
-        pieceCount: gridRows.value * gridCols.value
-      })
-    })
-    
     showToast(`成功分割 ${uploadedImages.value.length} 张图片，共 ${allPieces.length} 个分块`, 'success')
   } catch (error) {
     console.error('Split all error:', error)
