@@ -5,7 +5,7 @@ import './style.css'
 import App from './App.vue'
 
 const router = createRouter({
-  history: createWebHistory('/IMG-cropping/'),
+  history: createWebHistory('/'),
   routes: [
     {
       path: '/',

@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-  base: '/IMG-cropping/',
+  base: '/',
   plugins: [vue()],
   test: {
     globals: true,
@@ -20,6 +20,8 @@ export default defineConfig({
     }
   },
   build: {
+    outDir: 'dist',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks: {

@@ -67,19 +67,63 @@ npm run test
 
 ## 部署
 
+### Cloudflare Pages (推荐)
+
+#### 方法一：通过 Cloudflare Dashboard 部署
+
+1. 将代码推送到 GitHub/GitLab 仓库
+2. 访问 [Cloudflare Pages](https://pages.cloudflare.com)
+3. 点击 "Create a project" → "Connect to Git"
+4. 选择你的仓库
+5. 配置构建设置：
+   - **Project name**: `img-cropping` (或自定义)
+   - **Production branch**: `main` (或 `master`)
+   - **Framework preset**: `Vite`
+   - **Build command**: `npm run build`
+   - **Build output directory**: `dist`
+6. 点击 "Save and Deploy"
+7. 等待部署完成，即可获得 `*.pages.dev` 域名
+
+#### 方法二：使用 Wrangler CLI 部署
+
+1. 安装 Wrangler CLI：
+```bash
+npm install -g wrangler
+```
+
+2. 登录 Cloudflare：
+```bash
+wrangler login
+```
+
+3. 部署项目：
+```bash
+wrangler pages deploy dist
+```
+
+#### Cloudflare Pages 配置说明
+
+项目已包含以下 Cloudflare Pages 优化配置：
+
+- `public/_redirects` - SPA 路由重定向配置
+- `wrangler.toml` - Wrangler 配置文件
+- 已优化 `vite.config.js` 和路由配置
+
 ### GitHub Pages
 
-1. 将代码推送到 GitHub 仓库
-2. 在仓库设置中启用 GitHub Pages
-3. 选择 `gh-pages` 分支作为发布源
-4. 推送代码后会自动部署
+1. 在 `vite.config.js` 中修改 `base` 为你的仓库名：
+```javascript
+base: '/你的仓库名/',
+```
 
-### Cloudflare Pages
+2. 在 `src/main.js` 中修改路由 base：
+```javascript
+history: createWebHistory('/你的仓库名/'),
+```
 
-1. 连接 GitHub 仓库
-2. 构建命令：`npm run build`
-3. 输出目录：`dist`
-4. 环境变量：`NODE_VERSION=20`
+3. 将代码推送到 GitHub 仓库
+4. 在仓库设置中启用 GitHub Pages
+5. 选择 `gh-pages` 分支作为发布源
 
 ### Vercel
 
