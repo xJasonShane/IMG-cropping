@@ -172,14 +172,14 @@
                 :value="getDisplayFileName(index, piece.originalImageName)"
                 @input="handleFileNameInput(index, $event.target.value, piece.originalImageName)"
                 :class="getInputClass(index, piece.originalImageName)"
-                placeholder="输入文件名"
+                :placeholder="`默认: ${getDefaultFileName(index, piece.originalImageName)}`"
               />
             </div>
             <p 
-              v-if="!validateFileName(getDisplayFileName(index, piece.originalImageName)).valid"
+              v-if="getCustomFileName(index) && !validateFileName(getCustomFileName(index)).valid"
               class="text-xs text-red-500"
             >
-              {{ validateFileName(getDisplayFileName(index, piece.originalImageName)).error }}
+              {{ validateFileName(getCustomFileName(index)).error }}
             </p>
           </div>
         </div>
@@ -299,35 +299,28 @@ const setCustomFileName = (index, value) => {
 
 const getDisplayFileName = (index, originalName = null) => {
   const custom = getCustomFileName(index)
-  if (custom) {
-    return custom
-  }
-  return getDefaultFileName(index, originalName)
+  return custom || ''
 }
 
 const getInputClass = (index, originalName = null) => {
   let classes = 'flex-1 min-w-0 text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500'
   
   const hasCustom = getCustomFileName(index)
-  const validation = validateFileName(getDisplayFileName(index, originalName))
   
-  if (!validation.valid) {
-    classes += ' border-red-500'
-  } else if (hasCustom) {
-    classes += ' border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+  if (hasCustom) {
+    const validation = validateFileName(hasCustom)
+    if (!validation.valid) {
+      classes += ' border-red-500'
+    } else {
+      classes += ' border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+    }
   }
   
   return classes
 }
 
 const handleFileNameInput = (index, value, originalName = null) => {
-  const defaultName = getDefaultFileName(index, originalName)
-  
-  if (value === defaultName || value === '') {
-    setCustomFileName(index, '')
-  } else {
-    setCustomFileName(index, value)
-  }
+  setCustomFileName(index, value)
 }
 
 const showToast = (message, type = 'success') => {
