@@ -244,34 +244,6 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.cropper-container :deep(.cropper-view-box) {
-  outline: 2px solid #0ea5e9;
-  outline-offset: -2px;
-}
-
-.cropper-container :deep(.cropper-face) {
-  background-color: rgba(14, 165, 233, 0.08);
-}
-
-.cropper-container :deep(.cropper-line) {
-  background-color: #0ea5e9;
-}
-
-.cropper-container :deep(.cropper-point) {
-  background-color: #0ea5e9;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.cropper-container :deep(.cropper-modal) {
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.cropper-container :deep(.cropper-dashed) {
-  border: 1px dashed rgba(14, 165, 233, 0.5);
-}
-
 @media (prefers-color-scheme: dark) {
   .card {
     background-color: rgb(31 41 55);
