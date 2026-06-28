@@ -83,11 +83,13 @@
 <script setup>
 import { ref } from 'vue'
 import { useImageStore } from '../stores/image'
+import { useToastStore } from '../stores/toast'
 import { validateImageFile, readFileAsDataURL, generateId } from '../utils/helpers'
 
 const emit = defineEmits(['upload', 'imageSelected'])
 
 const imageStore = useImageStore()
+const toastStore = useToastStore()
 const fileInput = ref(null)
 const isDragging = ref(false)
 const isProcessing = ref(false)
@@ -127,33 +129,13 @@ const handleFileSelect = async (e) => {
   e.target.value = ''
 }
 
-const showError = (message) => {
-  const errorDiv = document.createElement('div')
-  errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-  errorDiv.textContent = message
-  document.body.appendChild(errorDiv)
-  setTimeout(() => {
-    document.body.removeChild(errorDiv)
-  }, 3000)
-}
-
-const showSuccess = (message) => {
-  const successDiv = document.createElement('div')
-  successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-  successDiv.textContent = message
-  document.body.appendChild(successDiv)
-  setTimeout(() => {
-    document.body.removeChild(successDiv)
-  }, 3000)
-}
-
 const processFiles = async (files) => {
   if (isProcessing.value) return
   
   const imageFiles = files.filter(file => file.type.startsWith('image/'))
   
   if (imageFiles.length === 0) {
-    showError('请选择有效的图片文件（JPG、PNG、WebP）')
+    toastStore.showToast('请选择有效的图片文件（JPG、PNG、WebP）', 'error')
     return
   }
 
@@ -179,6 +161,7 @@ const processFiles = async (files) => {
       }
       
       images.value.push(image)
+      imageStore.addUploadedImage(image)
       
       if (images.value.length === 1) {
         selectImage(image)
@@ -188,12 +171,12 @@ const processFiles = async (files) => {
       emit('upload', image)
     } catch (error) {
       console.error('File processing error:', error)
-      showError(file.name + ': ' + error.message)
+      toastStore.showToast(file.name + ': ' + error.message, 'error')
     }
   }
   
   if (successCount > 0) {
-    showSuccess('成功上传 ' + successCount + ' 张图片')
+    toastStore.showToast('成功上传 ' + successCount + ' 张图片', 'success')
   }
   
   isProcessing.value = false
@@ -208,13 +191,13 @@ const selectImage = (image) => {
 const removeImage = (index) => {
   const removed = images.value[index]
   images.value.splice(index, 1)
+  imageStore.removeUploadedImage(index)
   
   if (currentImageId.value === removed.id) {
     if (images.value.length > 0) {
       selectImage(images.value[0])
     } else {
       currentImageId.value = null
-      imageStore.clearImage()
     }
   }
 }

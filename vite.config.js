@@ -26,7 +26,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           'vendor': ['vue', 'vue-router', 'pinia'],
-          'cropper': ['cropperjs'],
           'utils': ['jszip']
         }
       }
@@ -41,7 +40,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['vue', 'vue-router', 'pinia', 'cropperjs', 'jszip']
+    include: ['vue', 'vue-router', 'pinia', 'jszip']
   },
   server: {
     hmr: {

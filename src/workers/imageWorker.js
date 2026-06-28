@@ -2,65 +2,29 @@ self.onmessage = function(e) {
   const { type, data } = e.data
 
   switch (type) {
-    case 'crop':
-      handleCrop(data)
-      break
-    case 'cropGrid':
-      handleCropGrid(data)
-      break
-    case 'applyFilters':
-      handleApplyFilters(data)
+    case 'splitGrid':
+      handleSplitGrid(data)
       break
     default:
       console.error('Unknown message type:', type)
   }
 }
 
-function handleCrop(data) {
-  const { imageData, cropData, options } = data
-  
-  try {
-    const canvas = new OffscreenCanvas(cropData.width, cropData.height)
-    const ctx = canvas.getContext('2d')
-    
-    ctx.drawImage(
-      imageData,
-      cropData.x,
-      cropData.y,
-      cropData.width,
-      cropData.height,
-      0,
-      0,
-      cropData.width,
-      cropData.height
-    )
-    
-    const blob = canvas.convertToBlob({
-      type: options.format || 'image/png',
-      quality: options.quality || 0.9
-    }).then(blob => {
-      self.postMessage({ type: 'cropComplete', blob })
-    })
-  } catch (error) {
-    self.postMessage({ type: 'error', error: error.message })
-  }
-}
+function handleSplitGrid(data) {
+  const { imageBitmap, rows, cols, format, quality, startIndex, originalImageName } = data
 
-function handleCropGrid(data) {
-  const { imageData, rows, cols, options } = data
-  
   try {
     const pieces = []
-    const pieceWidth = imageData.width / cols
-    const pieceHeight = imageData.height / rows
-    
+    const pieceWidth = Math.floor(imageBitmap.width / cols)
+    const pieceHeight = Math.floor(imageBitmap.height / rows)
+
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         const canvas = new OffscreenCanvas(pieceWidth, pieceHeight)
         const ctx = canvas.getContext('2d')
-        
+
         ctx.drawImage(
-          imageData,
+          imageBitmap,
           col * pieceWidth,
           row * pieceHeight,
           pieceWidth,
@@ -70,41 +34,34 @@ function handleCropGrid(data) {
           pieceWidth,
           pieceHeight
         )
-        
-        pieces.push(canvas)
+
+        pieces.push({
+          canvas,
+          row,
+          col,
+          index: startIndex + row * cols + col,
+          originalImageName
+        })
       }
     }
-    
-    const blobs = Promise.all(
-      pieces.map(canvas =>
-        canvas.convertToBlob({
-          type: options.format || 'image/png',
-          quality: options.quality || 0.9
-        })
-      )
-    ).then(blobs => {
-      self.postMessage({ type: 'cropGridComplete', blobs })
-    })
-  } catch (error) {
-    self.postMessage({ type: 'error', error: error.message })
-  }
-}
 
-function handleApplyFilters(data) {
-  const { imageData, filters } = data
-  
-  try {
-    const canvas = new OffscreenCanvas(imageData.width, imageData.height)
-    const ctx = canvas.getContext('2d')
-    
-    ctx.filter = `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) grayscale(${filters.grayscale}%) blur(${filters.blur}px)`
-    ctx.drawImage(imageData, 0, 0)
-    
-    const blob = canvas.convertToBlob({
-      type: 'image/png',
-      quality: 0.9
-    }).then(blob => {
-      self.postMessage({ type: 'filtersComplete', blob })
+    const blobsPromise = Promise.all(
+      pieces.map(piece =>
+        piece.canvas.convertToBlob({
+          type: `image/${format}`,
+          quality: quality / 100
+        }).then(blob => ({
+          blob,
+          row: piece.row,
+          col: piece.col,
+          index: piece.index,
+          originalImageName: piece.originalImageName
+        }))
+      )
+    )
+
+    blobsPromise.then(results => {
+      self.postMessage({ type: 'splitGridComplete', pieces: results })
     })
   } catch (error) {
     self.postMessage({ type: 'error', error: error.message })
