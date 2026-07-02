@@ -3,15 +3,15 @@
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <router-link to="/" class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg">
+          <router-link to="/" class="flex items-center space-x-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shrink-0">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
               </svg>
             </div>
-            <div>
-              <h1 class="text-xl font-bold text-gray-800 dark:text-white">图片分割工具</h1>
-              <p class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">快速分割图片，一键下载</p>
+            <div class="min-w-0">
+              <h1 class="text-xl font-bold text-gray-800 dark:text-white truncate">图片分割工具</h1>
+              <p class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block whitespace-nowrap overflow-hidden">快速分割图片，一键下载</p>
             </div>
           </router-link>
         </div>
