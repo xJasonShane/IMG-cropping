@@ -38,7 +38,7 @@
             <div
               v-for="(p, i) in innerXLlines"
               :key="'x-handle-' + i"
-              class="absolute top-0 bottom-0 w-4 -translate-x-1/2 cursor-col-resize flex items-center justify-center touch-none"
+              class="absolute top-0 bottom-0 w-4 -translate-x-1/2 cursor-col-resize flex items-center justify-center touch-none pointer-events-auto"
               :style="{ left: (p * 100) + '%' }"
               role="slider"
               tabindex="0"
@@ -53,7 +53,7 @@
             <div
               v-for="(p, i) in innerYLines"
               :key="'y-handle-' + i"
-              class="absolute left-0 right-0 h-4 -translate-y-1/2 cursor-row-resize flex items-center justify-center touch-none"
+              class="absolute left-0 right-0 h-4 -translate-y-1/2 cursor-row-resize flex items-center justify-center touch-none pointer-events-auto"
               :style="{ top: (p * 100) + '%' }"
               role="slider"
               tabindex="0"
