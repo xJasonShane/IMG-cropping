@@ -1,21 +1,27 @@
 <template>
   <div class="card">
     <div
-      class="upload-zone border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center transition-all duration-300 cursor-pointer"
+      class="upload-zone border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       :class="[
         isDragging ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 transform scale-105' : 'hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:shadow-lg'
       ]"
+      role="button"
+      tabindex="0"
+      aria-label="上传图片区域：拖放图片或按回车键选择文件"
       @dragover.prevent="handleDragOver"
       @dragleave.prevent="handleDragLeave"
       @drop.prevent="handleDrop"
       @click="triggerFileInput"
+      @keydown.enter.prevent="triggerFileInput"
+      @keydown.space.prevent="triggerFileInput"
     >
       <input
         ref="fileInput"
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,image/avif"
         multiple
         class="hidden"
+        aria-label="选择图片文件"
         @change="handleFileSelect"
       />
       

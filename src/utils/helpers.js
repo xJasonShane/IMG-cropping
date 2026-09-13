@@ -3,7 +3,7 @@ export const generateId = () => {
 }
 
 export const validateImageFile = (file) => {
-  const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
   const maxSize = 50 * 1024 * 1024
 
   if (!file) {

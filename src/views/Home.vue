@@ -96,12 +96,18 @@
           :quality="settingsStore.outputQuality"
           :naming-template="settingsStore.namingTemplate"
           :split-mode="settingsStore.splitMode"
+          :gap-size="settingsStore.gapSize"
+          :trim-size="settingsStore.trimSize"
+          :scale-target="settingsStore.scaleTarget"
           @update:rows="settingsStore.setGridRows"
           @update:cols="settingsStore.setGridCols"
           @update:format="settingsStore.setOutputFormat"
           @update:quality="settingsStore.setOutputQuality"
           @update:namingTemplate="settingsStore.setNamingTemplate"
           @update:splitMode="settingsStore.setSplitMode"
+          @update:gapSize="settingsStore.setGapSize"
+          @update:trimSize="settingsStore.setTrimSize"
+          @update:scaleTarget="settingsStore.setScaleTarget"
         />
         
         <div v-if="imageStore.currentImage" class="card">
@@ -171,7 +177,8 @@
               :alt="`分割图片 ${index + 1}`"
               loading="lazy"
               decoding="async"
-              class="w-full h-auto"
+              class="w-full h-auto cursor-zoom-in"
+              @click="lightboxIndex = index"
             />
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
               <button
@@ -208,12 +215,67 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- 分块灯箱预览 -->
+    <TransitionRoot appear :show="lightboxIndex >= 0" as="template">
+      <Dialog as="div" class="relative z-50" @close="lightboxIndex = -1">
+        <TransitionChild
+          as="template"
+          enter="duration-200 ease-out"
+          enter-from="opacity-0"
+          enter-to="opacity-100"
+          leave="duration-150 ease-in"
+          leave-from="opacity-100"
+          leave-to="opacity-0"
+        >
+          <div class="fixed inset-0 bg-black/85" />
+        </TransitionChild>
+
+        <div class="fixed inset-0 flex items-center justify-center p-4">
+          <DialogPanel
+            class="w-full max-w-5xl max-h-full flex flex-col items-center"
+            v-if="lightboxPiece"
+          >
+            <img
+              :src="lightboxPiece.url"
+              :alt="`分割图片 ${lightboxIndex + 1}`"
+              class="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
+            />
+            <div class="mt-4 flex items-center gap-3">
+              <button
+                type="button"
+                class="btn-primary"
+                @click="downloadPiece(lightboxIndex); lightboxIndex = -1"
+              >
+                下载此图
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                @click="lightboxIndex = -1"
+              >
+                关闭
+              </button>
+              <span class="text-sm text-gray-300 ml-2">
+                {{ lightboxIndex + 1 }} / {{ imageStore.splitPieces.length }}
+              </span>
+            </div>
+          </DialogPanel>
+        </div>
+      </Dialog>
+    </TransitionRoot>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import {
+  Dialog,
+  DialogPanel,
+  TransitionChild,
+  TransitionRoot
+} from '@headlessui/vue'
 import { formatFileSize } from '../utils/helpers'
 import { useImageStore } from '../stores/image'
 import { useSettingsStore } from '../stores/settings'
@@ -227,6 +289,10 @@ const settingsStore = useSettingsStore()
 const toastStore = useToastStore()
 
 const previewRef = ref(null)
+
+// 灯箱：当前预览的分块索引，-1 为关闭
+const lightboxIndex = ref(-1)
+const lightboxPiece = computed(() => imageStore.splitPieces[lightboxIndex.value] || null)
 
 // 预览边界线（百分比，含端点）：自定义模式用拖拽线，等分模式按行列数生成
 const previewXLines = computed(() => {

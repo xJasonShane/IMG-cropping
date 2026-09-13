@@ -94,6 +94,38 @@
       </div>
       
       <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">间隙与裁边</h4>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+              分块间隙: <span class="font-semibold text-primary-500">{{ gapSize }}px</span>
+            </label>
+            <input
+              type="range"
+              :value="gapSize"
+              @input="$emit('update:gapSize', Number($event.target.value))"
+              min="0"
+              max="100"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+              边缘裁切: <span class="font-semibold text-primary-500">{{ trimSize }}px</span>
+            </label>
+            <input
+              type="range"
+              :value="trimSize"
+              @input="$emit('update:trimSize', Number($event.target.value))"
+              min="0"
+              max="500"
+              class="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">输出设置</h4>
         <div class="space-y-4">
           <div>
@@ -125,6 +157,25 @@
             />
           </div>
           
+          <div>
+            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+              输出缩放
+            </label>
+            <select
+              :value="scaleTarget"
+              @change="$emit('update:scaleTarget', Number($event.target.value))"
+              class="input-field"
+            >
+              <option :value="0">原始尺寸</option>
+              <option :value="512">宽度 512px</option>
+              <option :value="768">宽度 768px</option>
+              <option :value="1024">宽度 1024px</option>
+              <option :value="1080">宽度 1080px</option>
+              <option :value="2048">宽度 2048px</option>
+            </select>
+            <p class="text-xs text-gray-400 mt-1">大于目标宽度的分块将等比缩小</p>
+          </div>
+
           <div>
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               命名模板
@@ -178,10 +229,22 @@ defineProps({
   splitMode: {
     type: String,
     default: 'grid'
+  },
+  gapSize: {
+    type: Number,
+    default: 0
+  },
+  trimSize: {
+    type: Number,
+    default: 0
+  },
+  scaleTarget: {
+    type: Number,
+    default: 0
   }
 })
 
-const emit = defineEmits(['update:rows', 'update:cols', 'update:format', 'update:quality', 'update:namingTemplate', 'update:splitMode'])
+const emit = defineEmits(['update:rows', 'update:cols', 'update:format', 'update:quality', 'update:namingTemplate', 'update:splitMode', 'update:gapSize', 'update:trimSize', 'update:scaleTarget'])
 
 const presets = [
   { label: '2×2', rows: 2, cols: 2 },

@@ -40,6 +40,12 @@
               :key="'x-handle-' + i"
               class="absolute top-0 bottom-0 w-4 -translate-x-1/2 cursor-col-resize flex items-center justify-center touch-none"
               :style="{ left: (p * 100) + '%' }"
+              role="slider"
+              tabindex="0"
+              :aria-label="`第 ${i + 1} 条垂直分割线`"
+              :aria-valuenow="Math.round(p * 100)"
+              aria-valuemin="2"
+              aria-valuemax="98"
               @pointerdown="startDrag($event, 'x', i + 1)"
             >
               <div class="w-0.5 h-8 rounded bg-primary-500 shadow-md hover:h-full hover:bg-primary-400 transition-all"></div>
@@ -49,6 +55,12 @@
               :key="'y-handle-' + i"
               class="absolute left-0 right-0 h-4 -translate-y-1/2 cursor-row-resize flex items-center justify-center touch-none"
               :style="{ top: (p * 100) + '%' }"
+              role="slider"
+              tabindex="0"
+              :aria-label="`第 ${i + 1} 条水平分割线`"
+              :aria-valuenow="Math.round(p * 100)"
+              aria-valuemin="2"
+              aria-valuemax="98"
               @pointerdown="startDrag($event, 'y', i + 1)"
             >
               <div class="h-0.5 w-8 rounded bg-primary-500 shadow-md hover:w-full hover:bg-primary-400 transition-all"></div>

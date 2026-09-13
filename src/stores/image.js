@@ -180,6 +180,9 @@ const splitWithWorker = async (image, settings, startIndex = 0, originalImageNam
           yLinesPx,
           format: settings.outputFormat,
           quality: settings.outputQuality,
+          gapPx: settings.gapSize,
+          trimPx: settings.trimSize,
+          scaleTarget: settings.scaleTarget,
           startIndex,
           originalImageName
         }
@@ -323,35 +326,50 @@ export const useImageStore = defineStore('image', () => {
     const yLinesPx = resolvePixelLines(settings, img.height, 'y')
     const format = settings.outputFormat
     const quality = settings.outputQuality
+    const gapHalf = (settings.gapSize || 0) / 2
+    const trim = settings.trimSize || 0
+    const scaleTarget = settings.scaleTarget || 0
+    const rowCount = yLinesPx.length - 1
+    const colCount = xLinesPx.length - 1
 
-    for (let row = 0; row < yLinesPx.length - 1; row++) {
-      for (let col = 0; col < xLinesPx.length - 1; col++) {
-        const pieceW = xLinesPx[col + 1] - xLinesPx[col]
-        const pieceH = yLinesPx[row + 1] - yLinesPx[row]
-        const offsetX = xLinesPx[col]
-        const offsetY = yLinesPx[row]
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        // 源区域内缩：贴边侧用裁切值，块间侧用一半间隙（与 worker 路径一致）
+        const srcX0 = xLinesPx[col] + (col === 0 ? trim : gapHalf)
+        const srcX1 = xLinesPx[col + 1] - (col === colCount - 1 ? trim : gapHalf)
+        const srcY0 = yLinesPx[row] + (row === 0 ? trim : gapHalf)
+        const srcY1 = yLinesPx[row + 1] - (row === rowCount - 1 ? trim : gapHalf)
+        const srcW = Math.max(1, srcX1 - srcX0)
+        const srcH = Math.max(1, srcY1 - srcY0)
+
+        let outW = srcW
+        let outH = srcH
+        if (scaleTarget > 0 && srcW > scaleTarget) {
+          outW = scaleTarget
+          outH = Math.max(1, Math.round(srcH * scaleTarget / srcW))
+        }
 
         const canvas = document.createElement('canvas')
-        canvas.width = pieceW
-        canvas.height = pieceH
+        canvas.width = outW
+        canvas.height = outH
         const ctx = canvas.getContext('2d')
 
         // JPEG 不支持透明，透明区域编码后会变黑，先铺白底
         if (format === 'jpeg') {
           ctx.fillStyle = '#ffffff'
-          ctx.fillRect(0, 0, pieceW, pieceH)
+          ctx.fillRect(0, 0, outW, outH)
         }
 
         ctx.drawImage(
           img,
-          offsetX,
-          offsetY,
-          pieceW,
-          pieceH,
+          srcX0,
+          srcY0,
+          srcW,
+          srcH,
           0,
           0,
-          pieceW,
-          pieceH
+          outW,
+          outH
         )
 
         const blob = await canvasToBlob(canvas, `image/${format}`, quality / 100)
@@ -361,7 +379,7 @@ export const useImageStore = defineStore('image', () => {
         pieces.push(createPieceFromBlob(blob, {
           row,
           col,
-          index: startIndex + row * (xLinesPx.length - 1) + col,
+          index: startIndex + row * colCount + col,
           format,
           originalImageName
         }))

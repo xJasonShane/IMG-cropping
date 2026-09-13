@@ -4,6 +4,7 @@ import { useImageStore } from '../src/stores/image'
 
 describe('Image Store', () => {
   beforeEach(() => {
+    localStorage.clear()
     setActivePinia(createPinia())
   })
 
