@@ -10,7 +10,7 @@ self.onmessage = function(e) {
   }
 }
 
-function handleSplitGrid(data) {
+function handleSplitGrid(data, requestId) {
   const { imageBitmap, xLinesPx, yLinesPx, format, quality, gapPx, trimPx, scaleTarget, startIndex, originalImageName } = data
 
   try {
@@ -86,9 +86,14 @@ function handleSplitGrid(data) {
       )
     )
 
-    blobsPromise.then(results => {
-      self.postMessage({ type: 'splitGridComplete', pieces: results, requestId })
-    })
+    blobsPromise
+      .then(results => {
+        self.postMessage({ type: 'splitGridComplete', pieces: results, requestId })
+      })
+      .catch(error => {
+        // 编码失败也必须回执，否则主线程会一直等待直至超时
+        self.postMessage({ type: 'error', error: error.message, requestId })
+      })
   } catch (error) {
     self.postMessage({ type: 'error', error: error.message, requestId })
   }
