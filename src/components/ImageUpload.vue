@@ -155,7 +155,6 @@ const processFiles = async (files) => {
         name: file.name,
         size: file.size,
         type: file.type,
-        file,
         url
       }
       

@@ -397,6 +397,8 @@ export const useImageStore = defineStore('image', () => {
     try {
       isProcessing.value = true
       processingProgress.value = 0
+      // 分块索引将整体重排，旧的自定义命名需一并清空（与 splitImage 行为一致）
+      customFileNames.value = {}
 
       const allPieces = []
       const totalImages = uploadedImages.value.length

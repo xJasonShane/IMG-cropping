@@ -141,12 +141,14 @@
         <div
           v-for="(piece, index) in imageStore.splitPieces"
           :key="index"
-          class="relative group"
+          class="relative group [content-visibility:auto] [contain-intrinsic-size:auto_300px]"
         >
           <div class="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
             <img
               :src="piece.url"
               :alt="`分割图片 ${index + 1}`"
+              loading="lazy"
+              decoding="async"
               class="w-full h-auto"
             />
             <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
