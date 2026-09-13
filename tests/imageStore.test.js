@@ -46,20 +46,43 @@ describe('Image Store', () => {
 
   it('should clear image', () => {
     const store = useImageStore()
-    const image = { 
-      id: '1', 
-      name: 'test.jpg', 
-      size: 1024, 
-      type: 'image/jpeg', 
-      dataUrl: 'data:image/jpeg;base64,test' 
+    const image = {
+      id: '1',
+      name: 'test.jpg',
+      size: 1024,
+      type: 'image/jpeg',
+      dataUrl: 'data:image/jpeg;base64,test'
     }
 
     store.setImage(image)
     store.setSplitPieces([{ canvas: {}, row: 0, col: 0, index: 0 }])
-    
+
     store.clearImage()
 
     expect(store.currentImage).toBeNull()
     expect(store.splitPieces).toHaveLength(0)
+  })
+
+  it('should validate file names consistently across consecutive calls', () => {
+    const store = useImageStore()
+
+    // 连续多次调用：/g 标志导致的 lastIndex 状态污染曾使校验结果交替错误
+    for (let i = 0; i < 3; i++) {
+      expect(store.validateFileName('img<a').valid).toBe(false)
+      expect(store.validateFileName('valid_name').valid).toBe(true)
+    }
+  })
+
+  it('should reject all invalid characters in file names', () => {
+    const store = useImageStore()
+    const invalidNames = ['a<b', 'a>b', 'a:b', 'a"b', 'a/b', 'a\\b', 'a|b', 'a?b', 'a*b']
+
+    invalidNames.forEach((name) => {
+      expect(store.validateFileName(name).valid).toBe(false)
+    })
+
+    expect(store.validateFileName('').valid).toBe(false)
+    expect(store.validateFileName('   ').valid).toBe(false)
+    expect(store.validateFileName('x'.repeat(256)).valid).toBe(false)
   })
 })

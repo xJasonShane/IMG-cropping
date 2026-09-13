@@ -352,7 +352,7 @@ export const useImageStore = defineStore('image', () => {
       .replace('{index}', String(index + 1).padStart(3, '0'))
   }
 
-  const invalidChars = /[<>:"/\\|?*]/g
+  const invalidChars = /[<>:"/\\|?*]/
 
   const validateFileName = (name) => {
     if (!name || name.trim() === '') {
