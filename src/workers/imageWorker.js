@@ -1,18 +1,18 @@
 import { calcPieceSizes } from '../utils/helpers'
 
 self.onmessage = function(e) {
-  const { type, data } = e.data
+  const { type, data, requestId } = e.data
 
   switch (type) {
     case 'splitGrid':
-      handleSplitGrid(data)
+      handleSplitGrid(data, requestId)
       break
     default:
       console.error('Unknown message type:', type)
   }
 }
 
-function handleSplitGrid(data) {
+function handleSplitGrid(data, requestId) {
   const { imageBitmap, rows, cols, format, quality, startIndex, originalImageName } = data
 
   try {
@@ -75,9 +75,9 @@ function handleSplitGrid(data) {
     )
 
     blobsPromise.then(results => {
-      self.postMessage({ type: 'splitGridComplete', pieces: results })
+      self.postMessage({ type: 'splitGridComplete', pieces: results, requestId })
     })
   } catch (error) {
-    self.postMessage({ type: 'error', error: error.message })
+    self.postMessage({ type: 'error', error: error.message, requestId })
   }
 }

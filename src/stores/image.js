@@ -85,27 +85,50 @@ const createBitmapFromBlob = async (blob) => {
   }
 }
 
-const splitWithWorker = async (imageDataUrl, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
+// 当前图片的解码缓存（容量 1）：调整行列数重复分割时免于重新解码原图
+let cachedBitmap = null
+let cachedBitmapId = null
+
+const getBitmapForImage = async (image) => {
+  if (cachedBitmap && cachedBitmapId === image.id) {
+    return cachedBitmap
+  }
+  if (cachedBitmap) {
+    cachedBitmap.close()
+    cachedBitmap = null
+    cachedBitmapId = null
+  }
+  const response = await fetch(image.dataUrl)
+  const blob = await response.blob()
+  cachedBitmap = await createBitmapFromBlob(blob)
+  cachedBitmapId = image.id
+  return cachedBitmap
+}
+
+// worker 请求序号：响应按 requestId 路由，避免共享单例 worker 的消息串扰
+let requestSeq = 0
+
+const splitWithWorker = async (image, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
   const w = getWorker()
   if (!w) return null
 
-  const response = await fetch(imageDataUrl)
-  const blob = await response.blob()
-  const imageBitmap = await createBitmapFromBlob(blob)
+  // 缓存的 bitmap 以克隆方式传给 worker（不能 transfer，否则主线程副本被 detach 无法复用）
+  const imageBitmap = await getBitmapForImage(image)
+  const requestId = ++requestSeq
 
   return new Promise((resolve, reject) => {
     let settled = false
     let timeoutId = null
 
     const handleMessage = (e) => {
-      const { type, pieces, error } = e.data
+      const { type, pieces, error, requestId: responseId } = e.data
+      if (responseId !== requestId) return
       if (type === 'splitGridComplete') {
         if (settled) return
         settled = true
         clearTimeout(timeoutId)
         w.removeEventListener('message', handleMessage)
         w.removeEventListener('error', handleError)
-        imageBitmap.close()
         resolve(pieces)
       } else if (type === 'error') {
         fail(new Error(error))
@@ -122,7 +145,6 @@ const splitWithWorker = async (imageDataUrl, rows, cols, format, quality, startI
       clearTimeout(timeoutId)
       w.removeEventListener('message', handleMessage)
       w.removeEventListener('error', handleError)
-      imageBitmap.close()
       reject(err)
       // worker 可能已处于崩溃状态，重建以便后续任务正常执行
       recreateWorker()
@@ -139,8 +161,9 @@ const splitWithWorker = async (imageDataUrl, rows, cols, format, quality, startI
     try {
       w.postMessage({
         type: 'splitGrid',
+        requestId,
         data: { imageBitmap, rows, cols, format, quality, startIndex, originalImageName }
-      }, [imageBitmap])
+      })
     } catch (err) {
       fail(err)
     }
@@ -324,7 +347,7 @@ export const useImageStore = defineStore('image', () => {
 
       if (checkWorkerSupport()) {
         const workerPieces = await splitWithWorker(
-          currentImage.value.dataUrl,
+          currentImage.value,
           settings.gridRows,
           settings.gridCols,
           settings.outputFormat,
@@ -371,7 +394,7 @@ export const useImageStore = defineStore('image', () => {
 
         if (checkWorkerSupport()) {
           const workerPieces = await splitWithWorker(
-            image.dataUrl,
+            image,
             settings.gridRows,
             settings.gridCols,
             settings.outputFormat,
