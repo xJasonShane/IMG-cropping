@@ -37,6 +37,18 @@ const recreateWorker = () => {
 // 分割任务超时兜底时间（毫秒）
 const WORKER_TIMEOUT = 60000
 
+// 将含透明通道的画布铺到白色背景上，用于 JPEG 编码前处理
+const flattenToWhiteBackground = (source) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = source.width
+  canvas.height = source.height
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.drawImage(source, 0, 0)
+  return canvas
+}
+
 const blobToDataUrl = (blob) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -239,6 +251,12 @@ export const useImageStore = defineStore('image', () => {
         canvas.height = pieceH
         const ctx = canvas.getContext('2d')
 
+        // JPEG 不支持透明，透明区域编码后会变黑，先铺白底
+        if (format === 'jpeg') {
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, pieceW, pieceH)
+        }
+
         ctx.drawImage(
           img,
           col * pieceW,
@@ -418,7 +436,11 @@ export const useImageStore = defineStore('image', () => {
     if (!piece) return
 
     const settings = useSettingsStore()
-    const blob = await canvasToBlob(piece.canvas, `image/${settings.outputFormat}`, settings.outputQuality / 100)
+    // 分块可能含透明通道，JPEG 编码前铺白底避免透明区域变黑
+    const source = settings.outputFormat === 'jpeg'
+      ? flattenToWhiteBackground(piece.canvas)
+      : piece.canvas
+    const blob = await canvasToBlob(source, `image/${settings.outputFormat}`, settings.outputQuality / 100)
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -442,7 +464,10 @@ export const useImageStore = defineStore('image', () => {
 
       for (let i = 0; i < splitPieces.value.length; i++) {
         const piece = splitPieces.value[i]
-        const blob = await canvasToBlob(piece.canvas, `image/${settings.outputFormat}`, settings.outputQuality / 100)
+        const source = settings.outputFormat === 'jpeg'
+          ? flattenToWhiteBackground(piece.canvas)
+          : piece.canvas
+        const blob = await canvasToBlob(source, `image/${settings.outputFormat}`, settings.outputQuality / 100)
         const filename = `${generateFileName(i, piece.originalImageName)}.${settings.outputFormat}`
         zip.file(filename, blob)
         processingProgress.value = Math.round(((i + 1) / splitPieces.value.length) * 100)

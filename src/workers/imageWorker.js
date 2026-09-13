@@ -23,6 +23,12 @@ function handleSplitGrid(data) {
         const canvas = new OffscreenCanvas(pieceWidth, pieceHeight)
         const ctx = canvas.getContext('2d')
 
+        // JPEG 不支持透明，透明区域编码后会变黑，先铺白底
+        if (format === 'jpeg') {
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, pieceWidth, pieceHeight)
+        }
+
         ctx.drawImage(
           imageBitmap,
           col * pieceWidth,
