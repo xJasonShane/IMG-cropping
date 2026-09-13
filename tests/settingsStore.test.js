@@ -84,7 +84,7 @@ describe('Settings Store', () => {
       name: 'photo.jpg',
       size: 1024,
       type: 'image/jpeg',
-      dataUrl: 'data:image/jpeg;base64,test'
+      url: 'blob:mock-image'
     }
     imageStore.setImage(image)
 

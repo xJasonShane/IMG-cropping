@@ -11,7 +11,7 @@
       <div v-else class="relative inline-block">
         <img
           ref="imageRef"
-          :src="image.dataUrl"
+          :src="image.url"
           :alt="image.name"
           class="max-w-full max-h-[500px] w-auto h-auto block"
           @load="onImageLoad"

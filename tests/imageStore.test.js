@@ -21,7 +21,7 @@ describe('Image Store', () => {
       name: 'test.jpg', 
       size: 1024, 
       type: 'image/jpeg', 
-      dataUrl: 'data:image/jpeg;base64,test' 
+      url: 'blob:mock-image' 
     }
 
     store.setImage(image)
@@ -51,7 +51,7 @@ describe('Image Store', () => {
       name: 'test.jpg',
       size: 1024,
       type: 'image/jpeg',
-      dataUrl: 'data:image/jpeg;base64,test'
+      url: 'blob:mock-image'
     }
 
     store.setImage(image)
@@ -93,7 +93,7 @@ describe('Image Store', () => {
       name: 'photo.jpg',
       size: 1024,
       type: 'image/jpeg',
-      dataUrl: 'data:image/jpeg;base64,test'
+      url: 'blob:mock-image'
     }
 
     store.setImage(image)

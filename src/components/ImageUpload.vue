@@ -59,7 +59,7 @@
                  currentImageId === image.id ? 'border-primary-500 ring-2 ring-primary-500/30' : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-600'
                ]"
                @click="selectImage(image)">
-            <img :src="image.dataUrl" :alt="image.name" class="w-full h-full object-cover">
+            <img :src="image.url" :alt="image.name" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <button
                 @click.stop="removeImage(index)"
@@ -84,7 +84,7 @@
 import { ref } from 'vue'
 import { useImageStore } from '../stores/image'
 import { useToastStore } from '../stores/toast'
-import { validateImageFile, readFileAsDataURL, generateId } from '../utils/helpers'
+import { validateImageFile, generateId } from '../utils/helpers'
 
 const imageStore = useImageStore()
 const toastStore = useToastStore()
@@ -143,19 +143,20 @@ const processFiles = async (files) => {
   for (const file of imageFiles) {
     try {
       validateImageFile(file)
-      
-      const dataUrl = await readFileAsDataURL(file)
-      
-      if (!dataUrl || dataUrl === 'data:,') {
+
+      // 使用 objectURL 引用原始文件，避免 base64 dataURL 常驻内存导致多图上传时内存暴涨
+      const url = URL.createObjectURL(file)
+      if (!url) {
         throw new Error('文件读取失败，请重试')
       }
-      
+
       const image = {
         id: generateId(),
         name: file.name,
         size: file.size,
         type: file.type,
-        dataUrl
+        file,
+        url
       }
       
       images.value.push(image)

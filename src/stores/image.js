@@ -98,7 +98,7 @@ const getBitmapForImage = async (image) => {
     cachedBitmap = null
     cachedBitmapId = null
   }
-  const response = await fetch(image.dataUrl)
+  const response = await fetch(image.url)
   const blob = await response.blob()
   cachedBitmap = await createBitmapFromBlob(blob)
   cachedBitmapId = image.id
@@ -223,7 +223,7 @@ export const useImageStore = defineStore('image', () => {
       imageWidth.value = img.width
       imageHeight.value = img.height
     }
-    img.src = image.dataUrl
+    img.src = image.url
   }
 
   const addUploadedImage = (image) => {
@@ -233,6 +233,9 @@ export const useImageStore = defineStore('image', () => {
   const removeUploadedImage = (index) => {
     const removed = uploadedImages.value[index]
     uploadedImages.value.splice(index, 1)
+    if (removed?.url) {
+      URL.revokeObjectURL(removed.url)
+    }
 
     if (currentImage.value?.id === removed.id) {
       if (uploadedImages.value.length > 0) {
@@ -250,6 +253,9 @@ export const useImageStore = defineStore('image', () => {
 
   const clearImage = () => {
     setSplitPieces([])
+    uploadedImages.value.forEach((img) => {
+      if (img?.url) URL.revokeObjectURL(img.url)
+    })
     currentImage.value = null
     uploadedImages.value = []
     imageWidth.value = 0
@@ -269,13 +275,13 @@ export const useImageStore = defineStore('image', () => {
     }
   }
 
-  const loadImage = async (dataUrl) => {
+  const loadImage = async (src) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
     await new Promise((resolve, reject) => {
       img.onload = resolve
       img.onerror = reject
-      img.src = dataUrl
+      img.src = src
     })
     return img
   }
@@ -360,7 +366,7 @@ export const useImageStore = defineStore('image', () => {
           format: settings.outputFormat
         }))
       } else {
-        const img = await loadImage(currentImage.value.dataUrl)
+        const img = await loadImage(currentImage.value.url)
         pieces = await splitImageToPieces(img, settings.gridRows, settings.gridCols, settings.outputFormat, settings.outputQuality)
       }
 
@@ -410,7 +416,7 @@ export const useImageStore = defineStore('image', () => {
             originalImageName: p.originalImageName
           }))
         } else {
-          const img = await loadImage(image.dataUrl)
+          const img = await loadImage(image.url)
           pieces = await splitImageToPieces(
             img,
             settings.gridRows,
