@@ -59,8 +59,18 @@ const blobToDataUrl = (blob) => {
   })
 }
 
+// 显式按 EXIF 方向解码，避免 iPhone 等设备拍摄的照片在不同浏览器中方向不一致；
+// 旧浏览器不支持 imageOrientation 选项时降级为默认解码
+const createBitmapFromBlob = async (blob) => {
+  try {
+    return await createImageBitmap(blob, { imageOrientation: 'from-image' })
+  } catch {
+    return await createImageBitmap(blob)
+  }
+}
+
 const blobToCanvas = async (blob) => {
-  const img = await createImageBitmap(blob)
+  const img = await createBitmapFromBlob(blob)
   const canvas = document.createElement('canvas')
   canvas.width = img.width
   canvas.height = img.height
@@ -76,7 +86,7 @@ const splitWithWorker = async (imageDataUrl, rows, cols, format, quality, startI
 
   const response = await fetch(imageDataUrl)
   const blob = await response.blob()
-  const imageBitmap = await createImageBitmap(blob)
+  const imageBitmap = await createBitmapFromBlob(blob)
 
   return new Promise((resolve, reject) => {
     let settled = false
