@@ -16,6 +16,11 @@ const router = createRouter({
       path: '/about',
       name: 'About',
       component: () => import('./views/About.vue')
+    },
+    {
+      // 未匹配路由统一回首页
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ]
 })

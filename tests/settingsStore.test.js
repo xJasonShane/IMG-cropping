@@ -1,6 +1,7 @@
 import { setActivePinia, createPinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useSettingsStore } from '../src/stores/settings'
+import { useImageStore } from '../src/stores/image'
 
 describe('Settings Store', () => {
   beforeEach(() => {
@@ -75,13 +76,22 @@ describe('Settings Store', () => {
     expect(store.outputQuality).toBe(100)
   })
 
-  it('should generate filename with template', () => {
-    const store = useSettingsStore()
-    
-    const filename = store.generateFileName('photo.jpg', 0)
-    expect(filename).toBe('photo_001')
-    
-    const filename2 = store.generateFileName('image.png', 9)
-    expect(filename2).toBe('image_010')
+  it('should apply naming template from settings when generating filenames', () => {
+    const settings = useSettingsStore()
+    const imageStore = useImageStore()
+    const image = {
+      id: '1',
+      name: 'photo.jpg',
+      size: 1024,
+      type: 'image/jpeg',
+      dataUrl: 'data:image/jpeg;base64,test'
+    }
+    imageStore.setImage(image)
+
+    expect(imageStore.generateFileName(0)).toBe('photo_001')
+    expect(imageStore.generateFileName(9, 'image.png')).toBe('image_010')
+
+    settings.setNamingTemplate('{original}_r{index}')
+    expect(imageStore.generateFileName(0)).toBe('photo_r001')
   })
 })

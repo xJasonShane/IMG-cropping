@@ -202,11 +202,9 @@ const toastStore = useToastStore()
 
 const previewRef = ref(null)
 
+// 默认命名（复用 store 实现，custom 为空时即返回模板命名）
 const getDefaultFileName = (index, originalName = null) => {
-  const name = originalName || imageStore.currentImage?.name?.replace(/\.[^/.]+$/, '') || 'image'
-  return settingsStore.namingTemplate
-    .replace('{original}', name.replace(/\.[^/.]+$/, ''))
-    .replace('{index}', String(index + 1).padStart(3, '0'))
+  return imageStore.generateFileName(index, originalName)
 }
 
 const getDisplayFileName = (index, originalName = null) => {

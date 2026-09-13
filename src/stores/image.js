@@ -425,9 +425,9 @@ export const useImageStore = defineStore('image', () => {
       }
     }
 
-    const name = originalName || currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'image'
+    const rawName = originalName || currentImage.value?.name || 'image'
     return settings.namingTemplate
-      .replace('{original}', name.replace(/\.[^/.]+$/, ''))
+      .replace('{original}', rawName.replace(/\.[^/.]+$/, ''))
       .replace('{index}', String(index + 1).padStart(3, '0'))
   }
 

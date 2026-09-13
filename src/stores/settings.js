@@ -28,13 +28,6 @@ export const useSettingsStore = defineStore('settings', () => {
     namingTemplate.value = template
   }
 
-  const generateFileName = (originalName, index) => {
-    const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '')
-    return namingTemplate.value
-      .replace('{original}', nameWithoutExt)
-      .replace('{index}', String(index + 1).padStart(3, '0'))
-  }
-
   return {
     gridRows,
     gridCols,
@@ -45,7 +38,6 @@ export const useSettingsStore = defineStore('settings', () => {
     setGridCols,
     setOutputFormat,
     setOutputQuality,
-    setNamingTemplate,
-    generateFileName
+    setNamingTemplate
   }
 })
