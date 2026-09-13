@@ -26,6 +26,17 @@ const getWorker = () => {
   return worker
 }
 
+// worker 崩溃或超时后终止并重建，避免后续分割任务永远无响应
+const recreateWorker = () => {
+  if (worker) {
+    worker.terminate()
+    worker = null
+  }
+}
+
+// 分割任务超时兜底时间（毫秒）
+const WORKER_TIMEOUT = 60000
+
 const blobToDataUrl = (blob) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -55,24 +66,56 @@ const splitWithWorker = async (imageDataUrl, rows, cols, format, quality, startI
   const imageBitmap = await createImageBitmap(blob)
 
   return new Promise((resolve, reject) => {
+    let settled = false
+    let timeoutId = null
+
     const handleMessage = (e) => {
       const { type, pieces, error } = e.data
       if (type === 'splitGridComplete') {
+        if (settled) return
+        settled = true
+        clearTimeout(timeoutId)
         w.removeEventListener('message', handleMessage)
+        w.removeEventListener('error', handleError)
         imageBitmap.close()
         resolve(pieces)
       } else if (type === 'error') {
-        w.removeEventListener('message', handleMessage)
-        imageBitmap.close()
-        reject(new Error(error))
+        fail(new Error(error))
       }
     }
 
+    const handleError = () => {
+      fail(new Error('图片处理线程异常，请重试'))
+    }
+
+    const fail = (err) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeoutId)
+      w.removeEventListener('message', handleMessage)
+      w.removeEventListener('error', handleError)
+      imageBitmap.close()
+      reject(err)
+      // worker 可能已处于崩溃状态，重建以便后续任务正常执行
+      recreateWorker()
+    }
+
+    // 超时兜底：worker 无响应时终止并重建，避免 isProcessing 永久卡死
+    timeoutId = setTimeout(() => {
+      fail(new Error('图片处理超时，请重试'))
+    }, WORKER_TIMEOUT)
+
     w.addEventListener('message', handleMessage)
-    w.postMessage({
-      type: 'splitGrid',
-      data: { imageBitmap, rows, cols, format, quality, startIndex, originalImageName }
-    }, [imageBitmap])
+    w.addEventListener('error', handleError)
+
+    try {
+      w.postMessage({
+        type: 'splitGrid',
+        data: { imageBitmap, rows, cols, format, quality, startIndex, originalImageName }
+      }, [imageBitmap])
+    } catch (err) {
+      fail(err)
+    }
   })
 }
 
