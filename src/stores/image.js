@@ -50,13 +50,29 @@ const flattenToWhiteBackground = (source) => {
   return canvas
 }
 
-const blobToDataUrl = (blob) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
+// 由 blob 构建分块：只保留 blob 与预览用 objectURL，不再额外持有 canvas 和 base64 dataUrl
+const createPieceFromBlob = (blob, { row, col, index, format, originalImageName }) => {
+  const piece = {
+    blob,
+    url: URL.createObjectURL(blob),
+    format,
+    row,
+    col,
+    index
+  }
+  if (originalImageName) {
+    piece.originalImageName = originalImageName
+  }
+  return piece
+}
+
+// 释放分块的 objectURL，防止长时间使用后内存泄漏
+const revokePieces = (pieces) => {
+  if (Array.isArray(pieces)) {
+    pieces.forEach((p) => {
+      if (p?.url) URL.revokeObjectURL(p.url)
+    })
+  }
 }
 
 // 显式按 EXIF 方向解码，避免 iPhone 等设备拍摄的照片在不同浏览器中方向不一致；
@@ -67,17 +83,6 @@ const createBitmapFromBlob = async (blob) => {
   } catch {
     return await createImageBitmap(blob)
   }
-}
-
-const blobToCanvas = async (blob) => {
-  const img = await createBitmapFromBlob(blob)
-  const canvas = document.createElement('canvas')
-  canvas.width = img.width
-  canvas.height = img.height
-  const ctx = canvas.getContext('2d')
-  ctx.drawImage(img, 0, 0)
-  img.close()
-  return canvas
 }
 
 const splitWithWorker = async (imageDataUrl, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
@@ -187,7 +192,7 @@ export const useImageStore = defineStore('image', () => {
 
   const setImage = (image) => {
     currentImage.value = image
-    splitPieces.value = []
+    setSplitPieces([])
     customFileNames.value = {}
 
     const img = new Image()
@@ -216,13 +221,14 @@ export const useImageStore = defineStore('image', () => {
   }
 
   const setSplitPieces = (pieces) => {
+    revokePieces(splitPieces.value)
     splitPieces.value = pieces
   }
 
   const clearImage = () => {
+    setSplitPieces([])
     currentImage.value = null
     uploadedImages.value = []
-    splitPieces.value = []
     imageWidth.value = 0
     imageHeight.value = 0
     customFileNames.value = {}
@@ -251,7 +257,7 @@ export const useImageStore = defineStore('image', () => {
     return img
   }
 
-  const splitImageToPieces = (img, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
+  const splitImageToPieces = async (img, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
     const pieces = []
     // 标准块向下取整、末块补齐余数，确保切割结果完整覆盖原图
     const colSizes = calcPieceSizes(img.width, cols)
@@ -287,18 +293,17 @@ export const useImageStore = defineStore('image', () => {
           pieceH
         )
 
-        const dataUrl = canvas.toDataURL(`image/${format}`, quality / 100)
-        const piece = {
-          canvas,
-          dataUrl,
+        const blob = await canvasToBlob(canvas, `image/${format}`, quality / 100)
+        if (!blob) {
+          throw new Error('图片编码失败，请重试')
+        }
+        pieces.push(createPieceFromBlob(blob, {
           row,
           col,
-          index: startIndex + row * cols + col
-        }
-        if (originalImageName) {
-          piece.originalImageName = originalImageName
-        }
-        pieces.push(piece)
+          index: startIndex + row * cols + col,
+          format,
+          originalImageName
+        }))
       }
     }
 
@@ -325,22 +330,19 @@ export const useImageStore = defineStore('image', () => {
           settings.outputFormat,
           settings.outputQuality
         )
-        pieces = await Promise.all(
-          workerPieces.map(async (p) => ({
-            canvas: await blobToCanvas(p.blob),
-            dataUrl: await blobToDataUrl(p.blob),
-            row: p.row,
-            col: p.col,
-            index: p.index
-          }))
-        )
+        pieces = workerPieces.map((p) => createPieceFromBlob(p.blob, {
+          row: p.row,
+          col: p.col,
+          index: p.index,
+          format: settings.outputFormat
+        }))
       } else {
         const img = await loadImage(currentImage.value.dataUrl)
-        pieces = splitImageToPieces(img, settings.gridRows, settings.gridCols, settings.outputFormat, settings.outputQuality)
+        pieces = await splitImageToPieces(img, settings.gridRows, settings.gridCols, settings.outputFormat, settings.outputQuality)
       }
 
       processingProgress.value = 100
-      splitPieces.value = pieces
+      setSplitPieces(pieces)
       return { success: true, count: pieces.length }
     } catch (error) {
       console.error('Split error:', error)
@@ -377,19 +379,16 @@ export const useImageStore = defineStore('image', () => {
             allPieces.length,
             image.name
           )
-          pieces = await Promise.all(
-            workerPieces.map(async (p) => ({
-              canvas: await blobToCanvas(p.blob),
-              dataUrl: await blobToDataUrl(p.blob),
-              row: p.row,
-              col: p.col,
-              index: p.index,
-              originalImageName: p.originalImageName
-            }))
-          )
+          pieces = workerPieces.map((p) => createPieceFromBlob(p.blob, {
+            row: p.row,
+            col: p.col,
+            index: p.index,
+            format: settings.outputFormat,
+            originalImageName: p.originalImageName
+          }))
         } else {
           const img = await loadImage(image.dataUrl)
-          pieces = splitImageToPieces(
+          pieces = await splitImageToPieces(
             img,
             settings.gridRows,
             settings.gridCols,
@@ -404,7 +403,7 @@ export const useImageStore = defineStore('image', () => {
         processingProgress.value = Math.round(((i + 1) / totalImages) * 100)
       }
 
-      splitPieces.value = allPieces
+      setSplitPieces(allPieces)
       return { success: true, imageCount: uploadedImages.value.length, pieceCount: allPieces.length }
     } catch (error) {
       console.error('Split all error:', error)
@@ -457,19 +456,40 @@ export const useImageStore = defineStore('image', () => {
     return validation.valid ? null : validation.error
   }
 
+  // 获取用于下载/打包的 blob：格式一致时直接复用分割时的编码结果，切换输出格式时才重新编码
+  const getDownloadBlob = async (piece, settings) => {
+    if (piece.format === settings.outputFormat) {
+      return piece.blob
+    }
+
+    const bitmap = await createBitmapFromBlob(piece.blob)
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(bitmap, 0, 0)
+    bitmap.close()
+
+    // 分块可能含透明通道，JPEG 编码前铺白底避免透明区域变黑
+    const source = settings.outputFormat === 'jpeg'
+      ? flattenToWhiteBackground(canvas)
+      : canvas
+    const blob = await canvasToBlob(source, `image/${settings.outputFormat}`, settings.outputQuality / 100)
+    if (!blob) {
+      throw new Error('图片编码失败，请重试')
+    }
+    return blob
+  }
+
   const downloadPiece = async (index) => {
     const piece = splitPieces.value[index]
     if (!piece) return { success: false, error: '分块不存在' }
 
     const settings = useSettingsStore()
     const warning = checkCustomNameWarning(index)
-    // 分块可能含透明通道，JPEG 编码前铺白底避免透明区域变黑
-    const source = settings.outputFormat === 'jpeg'
-      ? flattenToWhiteBackground(piece.canvas)
-      : piece.canvas
 
     try {
-      const blob = await canvasToBlob(source, `image/${settings.outputFormat}`, settings.outputQuality / 100)
+      const blob = await getDownloadBlob(piece, settings)
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
@@ -500,10 +520,7 @@ export const useImageStore = defineStore('image', () => {
       for (let i = 0; i < splitPieces.value.length; i++) {
         const piece = splitPieces.value[i]
         if (checkCustomNameWarning(i)) invalidNameCount++
-        const source = settings.outputFormat === 'jpeg'
-          ? flattenToWhiteBackground(piece.canvas)
-          : piece.canvas
-        const blob = await canvasToBlob(source, `image/${settings.outputFormat}`, settings.outputQuality / 100)
+        const blob = await getDownloadBlob(piece, settings)
         const filename = `${generateFileName(i, piece.originalImageName)}.${settings.outputFormat}`
         zip.file(filename, blob)
         processingProgress.value = Math.round(((i + 1) / splitPieces.value.length) * 100)

@@ -71,14 +71,6 @@ export const downloadImage = (blob, filename) => {
   URL.revokeObjectURL(url)
 }
 
-export const canvasToBlob = (canvas, type = 'image/png', quality = 0.9) => {
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob)
-    }, type, quality)
-  })
-}
-
 export const parseAspectRatio = (ratio) => {
   if (ratio === 'free') return NaN
   const [width, height] = ratio.split(':').map(Number)

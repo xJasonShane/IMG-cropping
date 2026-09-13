@@ -143,7 +143,7 @@
         >
           <div class="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
             <img
-              :src="piece.dataUrl"
+              :src="piece.url"
               :alt="`分割图片 ${index + 1}`"
               class="w-full h-auto"
             />
