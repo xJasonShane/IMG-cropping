@@ -179,6 +179,7 @@ export const useImageStore = defineStore('image', () => {
   const isProcessing = ref(false)
   const isDownloading = ref(false)
   const processingProgress = ref(0)
+  const processingLabel = ref('')
   const customFileNames = ref({})
 
   // 批量下载取消标志（非响应式，仅用于批间中断判断）
@@ -354,6 +355,7 @@ export const useImageStore = defineStore('image', () => {
     try {
       isProcessing.value = true
       processingProgress.value = 0
+      processingLabel.value = '正在分割...'
       customFileNames.value = {}
 
       let pieces
@@ -386,6 +388,7 @@ export const useImageStore = defineStore('image', () => {
     } finally {
       isProcessing.value = false
       processingProgress.value = 0
+      processingLabel.value = ''
     }
   }
 
@@ -439,6 +442,7 @@ export const useImageStore = defineStore('image', () => {
 
         allPieces.push(...pieces)
         processingProgress.value = Math.round(((i + 1) / totalImages) * 100)
+        processingLabel.value = `正在分割第 ${i + 1}/${totalImages} 张`
       }
 
       setSplitPieces(allPieces)
@@ -449,6 +453,7 @@ export const useImageStore = defineStore('image', () => {
     } finally {
       isProcessing.value = false
       processingProgress.value = 0
+      processingLabel.value = ''
     }
   }
 
@@ -579,6 +584,7 @@ export const useImageStore = defineStore('image', () => {
 
         entries.forEach(({ blob, filename }) => zip.file(filename, blob))
         processingProgress.value = Math.min(100, Math.round(((i + DOWNLOAD_BATCH_SIZE) / total) * 100))
+        processingLabel.value = `正在打包 ${Math.min(total, i + DOWNLOAD_BATCH_SIZE)}/${total} 张`
       }
 
       if (downloadCancelled) {
@@ -598,6 +604,7 @@ export const useImageStore = defineStore('image', () => {
       isDownloading.value = false
       downloadCancelled = false
       processingProgress.value = 0
+      processingLabel.value = ''
     }
   }
 
@@ -616,6 +623,7 @@ export const useImageStore = defineStore('image', () => {
     isProcessing,
     isDownloading,
     processingProgress,
+    processingLabel,
     customFileNames,
     pieceWidth,
     pieceHeight,

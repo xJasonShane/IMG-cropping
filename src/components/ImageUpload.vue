@@ -77,11 +77,26 @@
         </div>
       </div>
     </div>
+
+    <!-- 整页拖放遮罩：拖拽文件到页面任意位置均可上传 -->
+    <Teleport to="body">
+      <div
+        v-if="isPageDragging"
+        class="fixed inset-0 z-50 bg-primary-500/10 dark:bg-primary-400/10 backdrop-blur-sm flex items-center justify-center pointer-events-none"
+      >
+        <div class="border-4 border-dashed border-primary-500 rounded-2xl w-full h-full m-4 flex items-center justify-center">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl px-8 py-6 shadow-2xl text-center">
+            <p class="text-lg font-semibold text-primary-600 dark:text-primary-400">松开鼠标上传图片</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">支持批量拖放</p>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useImageStore } from '../stores/image'
 import { useToastStore } from '../stores/toast'
 import { validateImageFile, generateId } from '../utils/helpers'
@@ -93,6 +108,60 @@ const isDragging = ref(false)
 const isProcessing = ref(false)
 const images = ref([])
 const currentImageId = ref(null)
+const isPageDragging = ref(false)
+
+// 整页拖放深度计数：子元素会反复触发 enter/leave，计数归零才隐藏遮罩
+let dragDepth = 0
+
+const hasFiles = (e) => Array.from(e.dataTransfer?.types || []).includes('Files')
+
+const onPageDragEnter = (e) => {
+  if (!hasFiles(e)) return
+  e.preventDefault()
+  dragDepth++
+  isPageDragging.value = true
+}
+
+const onPageDragOver = (e) => {
+  // 必须 preventDefault 才允许 drop
+  if (hasFiles(e)) e.preventDefault()
+}
+
+const onPageDragLeave = (e) => {
+  if (!hasFiles(e)) return
+  e.preventDefault()
+  dragDepth = Math.max(0, dragDepth - 1)
+  if (dragDepth === 0) {
+    isPageDragging.value = false
+  }
+}
+
+const onPageDrop = async (e) => {
+  if (!hasFiles(e)) return
+  e.preventDefault()
+  dragDepth = 0
+  isPageDragging.value = false
+  // 上传区自身已处理过的 drop 不重复处理（其 handler 已 preventDefault）
+  if (e.defaultPrevented && e.target.closest?.('.upload-zone')) return
+  const files = Array.from(e.dataTransfer?.files || [])
+  if (files.length > 0) {
+    await processFiles(files)
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('dragenter', onPageDragEnter)
+  window.addEventListener('dragover', onPageDragOver)
+  window.addEventListener('dragleave', onPageDragLeave)
+  window.addEventListener('drop', onPageDrop)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('dragenter', onPageDragEnter)
+  window.removeEventListener('dragover', onPageDragOver)
+  window.removeEventListener('dragleave', onPageDragLeave)
+  window.removeEventListener('drop', onPageDrop)
+})
 
 const imageNameShort = (name) => {
   if (name.length > 10) {

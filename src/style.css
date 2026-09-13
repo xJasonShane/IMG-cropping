@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* 深色模式改为 class 策略：跟随 html.dark（Tailwind v4 中 darkMode: 'class' 配置无效），
+   支持 Header 的手动切换，默认沿用系统偏好 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --color-primary: #0ea5e9;
   --color-primary-hover: #0284c7;
@@ -244,40 +248,38 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-@media (prefers-color-scheme: dark) {
-  .card {
-    background-color: rgb(31 41 55);
-    border-color: rgb(55 65 81);
-  }
-  
-  .input-field {
-    background-color: rgb(55 65 81);
-    color: white;
-    border-color: rgb(75 85 99);
-  }
-  
-  .input-field::placeholder {
-    color: rgb(156 163 175);
-  }
-  
-  .btn-secondary {
-    background-color: rgb(55 65 81);
-    color: white;
-    border-color: rgb(75 85 99);
-  }
-  
-  .btn-secondary:hover {
-    background-color: rgb(75 85 99);
-  }
-  
-  input[type="range"] {
-    background: rgb(55 65 81);
-  }
-  
-  .glass-effect {
-    background: rgba(31, 41, 55, 0.8);
-    border-color: rgba(75, 85, 99, 0.3);
-  }
+.dark .card {
+  background-color: rgb(31 41 55);
+  border-color: rgb(55 65 81);
+}
+
+.dark .input-field {
+  background-color: rgb(55 65 81);
+  color: white;
+  border-color: rgb(75 85 99);
+}
+
+.dark .input-field::placeholder {
+  color: rgb(156 163 175);
+}
+
+.dark .btn-secondary {
+  background-color: rgb(55 65 81);
+  color: white;
+  border-color: rgb(75 85 99);
+}
+
+.dark .btn-secondary:hover {
+  background-color: rgb(75 85 99);
+}
+
+.dark input[type="range"] {
+  background: rgb(55 65 81);
+}
+
+.dark .glass-effect {
+  background: rgba(31, 41, 55, 0.8);
+  border-color: rgba(75, 85, 99, 0.3);
 }
 
 @media (max-width: 640px) {

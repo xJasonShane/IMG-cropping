@@ -70,6 +70,19 @@
               <span v-else>下载全部 ({{ imageStore.splitPieces.length }}张)</span>
             </button>
           </div>
+
+          <div v-if="imageStore.isProcessing" class="mt-4">
+            <div class="flex items-center justify-between mb-2 text-sm">
+              <span class="text-gray-600 dark:text-gray-300">{{ imageStore.processingLabel || '处理中...' }}</span>
+              <span class="text-primary-500 font-semibold">{{ imageStore.processingProgress }}%</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              <div
+                class="h-full rounded-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-300"
+                :style="{ width: imageStore.processingProgress + '%' }"
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
       
