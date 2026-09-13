@@ -1,40 +1,44 @@
 <template>
-  <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
-    <div class="container mx-auto px-4 py-4">
-      <div class="flex items-center justify-between">
+  <header class="bg-white/95 dark:bg-gray-800/95 backdrop-blur border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between h-16">
         <div class="flex items-center space-x-3">
           <router-link to="/" class="flex items-center space-x-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shrink-0">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-md shrink-0">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
               </svg>
             </div>
             <div class="min-w-0">
-              <h1 class="text-xl font-bold text-gray-800 dark:text-white truncate">图片分割工具</h1>
-              <p class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block whitespace-nowrap overflow-hidden">快速分割图片，一键下载</p>
+              <h1 class="text-base font-bold text-gray-800 dark:text-white truncate leading-tight">图片分割工具</h1>
+              <p class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block whitespace-nowrap overflow-hidden leading-tight">快速分割图片，一键下载</p>
             </div>
           </router-link>
         </div>
-        
-        <nav class="hidden md:flex items-center space-x-6">
-          <router-link 
-            to="/" 
-            class="text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors font-medium"
-            :class="{ 'text-primary-500 dark:text-primary-400': $route.path === '/' }"
+
+        <nav class="hidden md:flex items-center space-x-1">
+          <router-link
+            to="/"
+            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            :class="$route.path === '/'
+              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'"
           >
             首页
           </router-link>
-          <router-link 
-            to="/about" 
-            class="text-gray-600 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 transition-colors font-medium"
-            :class="{ 'text-primary-500 dark:text-primary-400': $route.path === '/about' }"
+          <router-link
+            to="/about"
+            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            :class="$route.path === '/about'
+              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'"
           >
             关于
           </router-link>
         </nav>
-        
-        <div class="flex items-center space-x-2">
-          <button 
+
+        <div class="flex items-center space-x-1">
+          <button
             @click="toggleDarkMode"
             class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             :title="isDark ? '切换到亮色模式' : '切换到深色模式'"
@@ -46,10 +50,11 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
             </svg>
           </button>
-          
-          <button 
+
+          <button
             @click="toggleMobileMenu"
             class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label="切换导航菜单"
           >
             <svg v-if="isMobileMenuOpen" class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -60,19 +65,19 @@
           </button>
         </div>
       </div>
-      
-      <div v-if="isMobileMenuOpen" class="md:hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <nav class="flex flex-col space-y-3">
-          <router-link 
-            to="/" 
+
+      <div v-if="isMobileMenuOpen" class="md:hidden py-3 border-t border-gray-200 dark:border-gray-700">
+        <nav class="flex flex-col space-y-1">
+          <router-link
+            to="/"
             @click="isMobileMenuOpen = false"
             class="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
             :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-500 dark:text-primary-400': $route.path === '/' }"
           >
             首页
           </router-link>
-          <router-link 
-            to="/about" 
+          <router-link
+            to="/about"
             @click="isMobileMenuOpen = false"
             class="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
             :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-500 dark:text-primary-400': $route.path === '/about' }"

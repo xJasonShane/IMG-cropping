@@ -1,94 +1,53 @@
 <template>
-  <div class="home min-h-screen">
-    <div class="mb-8">
-      <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">
-        图片分割工具
-      </h2>
-      <p class="text-gray-600 dark:text-gray-400">
-        上传图片，设置分割参数，一键分割并下载
-      </p>
-    </div>
+  <div class="home">
+    <!-- 操作流程引导：纯展示，状态由应用数据派生 -->
+    <ol class="flex items-center flex-wrap gap-y-2 gap-x-2 sm:gap-x-3 mb-6" aria-label="操作流程">
+      <li v-for="(step, i) in steps" :key="step.label" class="flex items-center gap-2">
+        <span
+          class="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold transition-colors"
+          :class="step.state === 'done'
+            ? 'bg-primary-500 text-white'
+            : step.state === 'active'
+              ? 'border-2 border-primary-500 text-primary-500'
+              : 'border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'"
+          :aria-current="step.state === 'active' ? 'step' : undefined"
+        >
+          <svg v-if="step.state === 'done'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <template v-else>{{ i + 1 }}</template>
+        </span>
+        <span
+          class="text-sm font-medium"
+          :class="step.state === 'active'
+            ? 'text-gray-900 dark:text-white'
+            : step.state === 'done'
+              ? 'text-gray-600 dark:text-gray-300'
+              : 'text-gray-400 dark:text-gray-500'"
+        >
+          {{ step.label }}
+        </span>
+      </li>
+      <li
+        v-for="i in steps.length - 1"
+        :key="'sep-' + i"
+        class="hidden sm:block w-6 h-px bg-gray-300 dark:bg-gray-600"
+        aria-hidden="true"
+      ></li>
+    </ol>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-      <div class="lg:col-span-2 space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6">
+      <!-- ① 上传区 -->
+      <section class="lg:col-start-1 lg:row-start-1" aria-label="上传图片">
         <ImageUpload />
-        
-        <div v-if="imageStore.currentImage" class="card">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-              <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z"></path>
-              </svg>
-              {{ imageStore.currentImage.name }}
-            </h3>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{ imageStore.imageWidth }} × {{ imageStore.imageHeight }} px
-            </span>
-          </div>
-          
-          <ImagePreview
-            ref="previewRef"
-            :image="imageStore.currentImage"
-            :x-lines="previewXLines"
-            :y-lines="previewYLines"
-            :editable="settingsStore.splitMode === 'custom'"
-            @lines-change="handleLinesChange"
-          />
-          
-          <div class="mt-6 flex flex-wrap gap-3">
-            <button
-              @click="splitImage"
-              :disabled="imageStore.isProcessing"
-              class="btn-primary flex items-center space-x-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-              </svg>
-              <span>{{ imageStore.isProcessing ? `分割中 ${imageStore.processingProgress}%` : '分割图片' }}</span>
-            </button>
-            
-            <button
-              v-if="imageStore.uploadedImages.length > 1"
-              @click="splitAllImages"
-              :disabled="imageStore.isProcessing"
-              class="btn-secondary flex items-center space-x-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"></path>
-              </svg>
-              <span>分割全部 ({{ imageStore.uploadedImages.length }}张)</span>
-            </button>
-            
-            <button
-              v-if="imageStore.splitPieces.length > 0"
-              @click="imageStore.isDownloading ? imageStore.cancelDownload() : downloadAll()"
-              :disabled="imageStore.isProcessing && !imageStore.isDownloading"
-              class="btn-primary flex items-center space-x-2"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-              </svg>
-              <span v-if="imageStore.isDownloading">取消下载</span>
-              <span v-else>下载全部 ({{ imageStore.splitPieces.length }}张)</span>
-            </button>
-          </div>
+      </section>
 
-          <div v-if="imageStore.isProcessing" class="mt-4">
-            <div class="flex items-center justify-between mb-2 text-sm">
-              <span class="text-gray-600 dark:text-gray-300">{{ imageStore.processingLabel || '处理中...' }}</span>
-              <span class="text-primary-500 font-semibold">{{ imageStore.processingProgress }}%</span>
-            </div>
-            <div class="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
-              <div
-                class="h-full rounded-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-300"
-                :style="{ width: imageStore.processingProgress + '%' }"
-              ></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="space-y-6">
+      <!-- ② 设置栏：桌面端居右，移动端位于上传与预览之间，符合操作顺序 -->
+      <aside
+        class="space-y-6 lg:col-start-2 lg:row-start-1"
+        :class="{ 'lg:row-span-3': imageStore.currentImage }"
+        aria-label="分割设置"
+      >
         <SettingsPanel
           :rows="settingsStore.gridRows"
           :cols="settingsStore.gridCols"
@@ -109,9 +68,9 @@
           @update:trimSize="settingsStore.setTrimSize"
           @update:scaleTarget="settingsStore.setScaleTarget"
         />
-        
+
         <div v-if="imageStore.currentImage" class="card">
-          <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
+          <h3 class="panel-title">
             <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
@@ -150,70 +109,152 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-    
-    <div v-if="imageStore.splitPieces.length > 0" class="card">
-      <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
-        <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-        </svg>
-        分割结果 ({{ imageStore.splitPieces.length }} 张) - {{ imageStore.displayRows }} 行 × {{ imageStore.displayCols }} 列
-      </h3>
-      <div 
-        class="grid gap-2"
-        :style="{
-          gridTemplateColumns: `repeat(${imageStore.displayCols}, minmax(0, 1fr))`
-        }"
-      >
-        <div
-          v-for="(piece, index) in imageStore.splitPieces"
-          :key="index"
-          class="relative group [content-visibility:auto] [contain-intrinsic-size:auto_300px]"
-        >
-          <div class="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
-            <img
-              :src="piece.url"
-              :alt="`分割图片 ${index + 1}`"
-              loading="lazy"
-              decoding="async"
-              class="w-full h-auto cursor-zoom-in"
-              @click="lightboxIndex = index"
-            />
-            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <button
-                @click="downloadPiece(index)"
-                class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
-                title="下载此图片"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="mt-2 space-y-1">
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0">
-                #{{ index + 1 }}
-              </span>
-              <input
-                type="text"
-                :value="getDisplayFileName(index, piece.originalImageName)"
-                @input="handleFileNameInput(index, $event.target.value, piece.originalImageName)"
-                :class="getInputClass(index, piece.originalImageName)"
-                :placeholder="`默认: ${getDefaultFileName(index, piece.originalImageName)}`"
-              />
-            </div>
-            <p 
-              v-if="imageStore.getCustomFileName(index) && !imageStore.validateFileName(imageStore.getCustomFileName(index)).valid"
-              class="text-xs text-red-500"
+      </aside>
+
+      <!-- ③ 预览与操作 -->
+      <section v-if="imageStore.currentImage" class="card lg:col-start-1" aria-label="预览与分割操作">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="panel-title mb-0">
+            <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2-2v12a2 2 0 002 2z"></path>
+            </svg>
+            {{ imageStore.currentImage.name }}
+          </h3>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            {{ imageStore.imageWidth }} × {{ imageStore.imageHeight }} px
+          </span>
+        </div>
+
+        <ImagePreview
+          ref="previewRef"
+          :image="imageStore.currentImage"
+          :x-lines="previewXLines"
+          :y-lines="previewYLines"
+          :editable="settingsStore.splitMode === 'custom'"
+          @lines-change="handleLinesChange"
+        />
+
+        <!-- 主操作条：分割 → 下载，按流程从左到右排列 -->
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex flex-wrap gap-3">
+            <button
+              @click="splitImage"
+              :disabled="imageStore.isProcessing"
+              class="btn-primary flex items-center space-x-2"
             >
-              {{ imageStore.validateFileName(imageStore.getCustomFileName(index)).error }}
-            </p>
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+              </svg>
+              <span>{{ imageStore.isProcessing ? `分割中 ${imageStore.processingProgress}%` : '分割图片' }}</span>
+            </button>
+
+            <button
+              v-if="imageStore.uploadedImages.length > 1"
+              @click="splitAllImages"
+              :disabled="imageStore.isProcessing"
+              class="btn-secondary flex items-center space-x-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-2-2v-6z"></path>
+              </svg>
+              <span>分割全部 ({{ imageStore.uploadedImages.length }}张)</span>
+            </button>
+
+            <button
+              v-if="imageStore.splitPieces.length > 0"
+              @click="imageStore.isDownloading ? imageStore.cancelDownload() : downloadAll()"
+              :disabled="imageStore.isProcessing && !imageStore.isDownloading"
+              class="btn-primary flex items-center space-x-2"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              <span v-if="imageStore.isDownloading">取消下载</span>
+              <span v-else>下载全部 ({{ imageStore.splitPieces.length }}张)</span>
+            </button>
+          </div>
+
+          <div v-if="imageStore.isProcessing" class="mt-4">
+            <div class="flex items-center justify-between mb-2 text-sm">
+              <span class="text-gray-600 dark:text-gray-300">{{ imageStore.processingLabel || '处理中...' }}</span>
+              <span class="text-primary-500 font-semibold">{{ imageStore.processingProgress }}%</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              <div
+                class="h-full rounded-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-300"
+                :style="{ width: imageStore.processingProgress + '%' }"
+              ></div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      <!-- ④ 分割结果 -->
+      <section v-if="imageStore.splitPieces.length > 0" class="card lg:col-start-1" aria-label="分割结果">
+        <h3 class="panel-title">
+          <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+          </svg>
+          分割结果
+          <span class="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+            {{ imageStore.splitPieces.length }} 张 · {{ imageStore.displayRows }} 行 × {{ imageStore.displayCols }} 列
+          </span>
+        </h3>
+        <div
+          class="grid gap-2"
+          :style="{
+            gridTemplateColumns: `repeat(${imageStore.displayCols}, minmax(0, 1fr))`
+          }"
+        >
+          <div
+            v-for="(piece, index) in imageStore.splitPieces"
+            :key="index"
+            class="relative group [content-visibility:auto] [contain-intrinsic-size:auto_300px]"
+          >
+            <div class="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+              <img
+                :src="piece.url"
+                :alt="`分割图片 ${index + 1}`"
+                loading="lazy"
+                decoding="async"
+                class="w-full h-auto cursor-zoom-in"
+                @click="lightboxIndex = index"
+              />
+              <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <button
+                  @click="downloadPiece(index)"
+                  class="p-2 bg-white/90 dark:bg-gray-800/90 rounded-full shadow-lg text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                  title="下载此图片"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="mt-2 space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400 font-medium shrink-0">
+                  #{{ index + 1 }}
+                </span>
+                <input
+                  type="text"
+                  :value="getDisplayFileName(index, piece.originalImageName)"
+                  @input="handleFileNameInput(index, $event.target.value, piece.originalImageName)"
+                  :class="getInputClass(index, piece.originalImageName)"
+                  :placeholder="`默认: ${getDefaultFileName(index, piece.originalImageName)}`"
+                />
+              </div>
+              <p
+                v-if="imageStore.getCustomFileName(index) && !imageStore.validateFileName(imageStore.getCustomFileName(index)).valid"
+                class="text-xs text-red-500"
+              >
+                {{ imageStore.validateFileName(imageStore.getCustomFileName(index)).error }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
 
     <!-- 分块灯箱预览 -->
@@ -294,6 +335,20 @@ const previewRef = ref(null)
 const lightboxIndex = ref(-1)
 const lightboxPiece = computed(() => imageStore.splitPieces[lightboxIndex.value] || null)
 
+// 流程引导（纯展示）：上传 → 调整参数 → 分割下载，由应用数据派生当前所处环节
+const steps = computed(() => {
+  const hasImage = !!imageStore.currentImage
+  const hasPieces = imageStore.splitPieces.length > 0
+  const busy = imageStore.isProcessing || imageStore.isDownloading
+
+  const current = !hasImage ? 1 : (hasPieces || busy ? 3 : 2)
+  return [
+    { label: '上传图片', state: hasImage ? 'done' : current === 1 ? 'active' : '' },
+    { label: '调整参数', state: current === 2 ? 'active' : current > 2 ? 'done' : '' },
+    { label: '分割下载', state: hasPieces && !busy ? 'done' : current === 3 ? 'active' : '' }
+  ]
+})
+
 // 预览边界线（百分比，含端点）：自定义模式用拖拽线，等分模式按行列数生成
 const previewXLines = computed(() => {
   const s = settingsStore
@@ -337,9 +392,9 @@ const getDisplayFileName = (index, originalName = null) => {
 
 const getInputClass = (index, originalName = null) => {
   let classes = 'flex-1 min-w-0 text-xs px-2 py-1 rounded border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500'
-  
+
   const hasCustom = imageStore.getCustomFileName(index)
-  
+
   if (hasCustom) {
     const validation = imageStore.validateFileName(hasCustom)
     if (!validation.valid) {
@@ -348,7 +403,7 @@ const getInputClass = (index, originalName = null) => {
       classes += ' border-primary-500 bg-primary-50 dark:bg-primary-900/20'
     }
   }
-  
+
   return classes
 }
 

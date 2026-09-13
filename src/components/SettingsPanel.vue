@@ -1,18 +1,19 @@
 <template>
   <div class="settings-panel card">
-    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
+    <h3 class="panel-title">
       <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
       </svg>
       分割设置
     </h3>
-    
-    <div class="space-y-6">
-      <div>
-        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">网格设置</h4>
 
-        <div class="flex rounded-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
+    <div class="space-y-5">
+      <!-- ① 网格设置 -->
+      <section aria-label="网格设置">
+        <h4 class="section-title"><span class="step-badge">1</span>网格设置</h4>
+
+        <div class="flex rounded-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden mb-3">
           <button
             type="button"
             class="flex-1 py-2 text-sm font-medium transition-all"
@@ -74,27 +75,29 @@
             </div>
           </div>
         </div>
-      </div>
-      
-      <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">快速预设</h4>
+      </section>
+
+      <!-- ② 快速预设：隶属网格设置，视觉上次一级 -->
+      <section aria-label="快速预设">
+        <h4 class="section-title"><span class="step-badge">2</span>快速预设</h4>
         <div class="grid grid-cols-3 gap-2">
           <button
             v-for="preset in presets"
             :key="preset.label"
             @click="applyPreset(preset)"
             class="px-3 py-2 text-sm rounded-lg border-2 transition-all"
-            :class="rows === preset.rows && cols === preset.cols 
-              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400' 
+            :class="rows === preset.rows && cols === preset.cols
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
               : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 text-gray-700 dark:text-gray-300'"
           >
             {{ preset.label }}
           </button>
         </div>
-      </div>
-      
-      <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">间隙与裁边</h4>
+      </section>
+
+      <!-- ③ 间隙与裁边 -->
+      <section class="pt-4 border-t border-gray-200 dark:border-gray-700" aria-label="间隙与裁边">
+        <h4 class="section-title"><span class="step-badge">3</span>间隙与裁边</h4>
         <div class="space-y-4">
           <div>
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -123,17 +126,18 @@
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">输出设置</h4>
+      <!-- ④ 输出设置 -->
+      <section class="pt-4 border-t border-gray-200 dark:border-gray-700" aria-label="输出设置">
+        <h4 class="section-title"><span class="step-badge">4</span>输出设置</h4>
         <div class="space-y-4">
           <div>
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               输出格式
             </label>
-            <select 
-              :value="format" 
+            <select
+              :value="format"
               @change="$emit('update:format', $event.target.value)"
               class="input-field"
             >
@@ -142,7 +146,7 @@
               <option value="webp">WebP (高效)</option>
             </select>
           </div>
-          
+
           <div>
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               质量: <span class="font-semibold text-primary-500">{{ quality }}%</span>
@@ -156,7 +160,7 @@
               class="w-full"
             />
           </div>
-          
+
           <div>
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               输出缩放
@@ -192,8 +196,9 @@
             </p>
           </div>
         </div>
-      </div>
-      
+      </section>
+
+      <!-- 分割总数：实时摘要 -->
       <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
           <span class="text-sm text-gray-700 dark:text-gray-300">分割总数</span>

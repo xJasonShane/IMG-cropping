@@ -103,8 +103,61 @@ body {
   border: 1px solid rgb(243 244 246);
 }
 
-.card:hover {
-  box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+/* 面板标题：卡片内主标题（带图标） */
+.panel-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: rgb(31 41 55);
+  margin-bottom: 1rem;
+}
+
+.dark .panel-title {
+  color: white;
+}
+
+/* 分区小标题：统一设置面板各分组的信息层级 */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(75 85 99);
+  margin-bottom: 0.75rem;
+}
+
+.dark .section-title {
+  color: rgb(209 213 219);
+}
+
+/* 分区步骤徽章：与页面顶部流程引导呼应 */
+.step-badge {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
+.dark .step-badge {
+  background-color: rgba(12, 74, 110, 0.45);
+  color: #7dd3fc;
+}
+
+/* 键盘可达性：仅键盘导航时显示焦点环 */
+:focus-visible {
+  outline: 2px solid #0ea5e9;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 .input-field {
