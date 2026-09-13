@@ -254,16 +254,28 @@ const splitAllImages = async () => {
 }
 
 const downloadPiece = async (index) => {
-  await imageStore.downloadPiece(index)
-  toastStore.showToast('图片下载成功', 'success')
+  const result = await imageStore.downloadPiece(index)
+  if (result?.success) {
+    if (result.warning) {
+      toastStore.showToast(`文件名非法：${result.warning}，已使用默认命名下载`, 'error')
+    } else {
+      toastStore.showToast('图片下载成功', 'success')
+    }
+  } else {
+    toastStore.showToast(result?.error || '下载失败，请重试', 'error')
+  }
 }
 
 const downloadAll = async () => {
   const result = await imageStore.downloadAll()
   if (result?.success) {
-    toastStore.showToast(`成功下载 ${result.count} 张图片`, 'success')
+    if (result.invalidNameCount > 0) {
+      toastStore.showToast(`下载成功，但 ${result.invalidNameCount} 个自定义文件名非法，已回退为默认命名`, 'error')
+    } else {
+      toastStore.showToast(`成功下载 ${result.count} 张图片`, 'success')
+    }
   } else {
-    toastStore.showToast('下载失败，请重试', 'error')
+    toastStore.showToast(result?.error || '下载失败，请重试', 'error')
   }
 }
 </script>

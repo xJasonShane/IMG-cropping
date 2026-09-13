@@ -85,4 +85,29 @@ describe('Image Store', () => {
     expect(store.validateFileName('   ').valid).toBe(false)
     expect(store.validateFileName('x'.repeat(256)).valid).toBe(false)
   })
+
+  it('should fall back to template naming when custom name is invalid', () => {
+    const store = useImageStore()
+    const image = {
+      id: '1',
+      name: 'photo.jpg',
+      size: 1024,
+      type: 'image/jpeg',
+      dataUrl: 'data:image/jpeg;base64,test'
+    }
+
+    store.setImage(image)
+
+    // 非法自定义名 → 回退到默认模板命名
+    store.setCustomFileName(0, 'bad/name')
+    expect(store.generateFileName(0)).toBe('photo_001')
+
+    // 合法自定义名 → 使用自定义名
+    store.setCustomFileName(0, 'my_name')
+    expect(store.generateFileName(0)).toBe('my_name')
+
+    // 清空自定义名 → 回退到默认模板命名
+    store.setCustomFileName(0, '')
+    expect(store.generateFileName(0)).toBe('photo_001')
+  })
 })

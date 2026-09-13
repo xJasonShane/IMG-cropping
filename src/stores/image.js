@@ -439,24 +439,40 @@ export const useImageStore = defineStore('image', () => {
     return { valid: true, error: '' }
   }
 
+  // 检查自定义文件名是否非法（非法时 generateFileName 会回退到默认命名）
+  const checkCustomNameWarning = (index) => {
+    const custom = getCustomFileName(index)
+    if (!custom) return null
+    const validation = validateFileName(custom)
+    return validation.valid ? null : validation.error
+  }
+
   const downloadPiece = async (index) => {
     const piece = splitPieces.value[index]
-    if (!piece) return
+    if (!piece) return { success: false, error: '分块不存在' }
 
     const settings = useSettingsStore()
+    const warning = checkCustomNameWarning(index)
     // 分块可能含透明通道，JPEG 编码前铺白底避免透明区域变黑
     const source = settings.outputFormat === 'jpeg'
       ? flattenToWhiteBackground(piece.canvas)
       : piece.canvas
-    const blob = await canvasToBlob(source, `image/${settings.outputFormat}`, settings.outputQuality / 100)
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${generateFileName(index, piece.originalImageName)}.${settings.outputFormat}`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+
+    try {
+      const blob = await canvasToBlob(source, `image/${settings.outputFormat}`, settings.outputQuality / 100)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${generateFileName(index, piece.originalImageName)}.${settings.outputFormat}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      return { success: true, warning }
+    } catch (error) {
+      console.error('Download piece error:', error)
+      return { success: false, error: error.message }
+    }
   }
 
   const downloadAll = async () => {
@@ -469,9 +485,11 @@ export const useImageStore = defineStore('image', () => {
       processingProgress.value = 0
 
       const zip = new JSZip()
+      let invalidNameCount = 0
 
       for (let i = 0; i < splitPieces.value.length; i++) {
         const piece = splitPieces.value[i]
+        if (checkCustomNameWarning(i)) invalidNameCount++
         const source = settings.outputFormat === 'jpeg'
           ? flattenToWhiteBackground(piece.canvas)
           : piece.canvas
@@ -485,7 +503,7 @@ export const useImageStore = defineStore('image', () => {
       const originalName = currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'images'
       downloadZip(zipBlob, `${originalName}_split.zip`)
 
-      return { success: true, count: splitPieces.value.length }
+      return { success: true, count: splitPieces.value.length, invalidNameCount }
     } catch (error) {
       console.error('Download error:', error)
       return { success: false, error: error.message }
