@@ -7,7 +7,7 @@
         </svg>
         <span class="text-sm">请上传图片进行预览</span>
       </div>
-      
+
       <div v-else class="relative inline-block">
         <img
           ref="imageRef"
@@ -16,14 +16,14 @@
           class="max-w-full max-h-[500px] w-auto h-auto block"
           @load="onImageLoad"
         />
-        
-        <div 
-          v-if="showGrid" 
+
+        <div
+          v-if="showGrid"
           class="absolute top-0 left-0 pointer-events-none"
           :style="gridContainerStyle"
         >
-          <div 
-            v-for="n in (rows * cols)" 
+          <div
+            v-for="n in (cellCount)"
             :key="n"
             class="absolute border border-primary-500/60 bg-primary-500/5"
             :style="getGridCellStyle(n - 1)"
@@ -32,10 +32,32 @@
               {{ n }}
             </span>
           </div>
+
+          <!-- 自定义模式：可拖拽分割线把手 -->
+          <template v-if="editable">
+            <div
+              v-for="(p, i) in innerXLlines"
+              :key="'x-handle-' + i"
+              class="absolute top-0 bottom-0 w-4 -translate-x-1/2 cursor-col-resize flex items-center justify-center touch-none"
+              :style="{ left: (p * 100) + '%' }"
+              @pointerdown="startDrag($event, 'x', i + 1)"
+            >
+              <div class="w-0.5 h-8 rounded bg-primary-500 shadow-md hover:h-full hover:bg-primary-400 transition-all"></div>
+            </div>
+            <div
+              v-for="(p, i) in innerYLines"
+              :key="'y-handle-' + i"
+              class="absolute left-0 right-0 h-4 -translate-y-1/2 cursor-row-resize flex items-center justify-center touch-none"
+              :style="{ top: (p * 100) + '%' }"
+              @pointerdown="startDrag($event, 'y', i + 1)"
+            >
+              <div class="h-0.5 w-8 rounded bg-primary-500 shadow-md hover:w-full hover:bg-primary-400 transition-all"></div>
+            </div>
+          </template>
         </div>
       </div>
     </div>
-    
+
     <div class="flex items-center justify-between mt-4">
       <div class="flex items-center space-x-4">
         <label class="flex items-center space-x-2 cursor-pointer">
@@ -46,10 +68,16 @@
           />
           <span class="text-sm text-gray-700 dark:text-gray-300">显示网格预览</span>
         </label>
+        <span
+          v-if="editable"
+          class="text-xs text-primary-500/80 hidden sm:inline"
+        >
+          拖动高亮分割线可自定义分块
+        </span>
       </div>
-      
+
       <div class="text-sm text-gray-500 dark:text-gray-400">
-        {{ rows }} 行 × {{ cols }} 列 = {{ rows * cols }} 块
+        {{ rowCount }} 行 × {{ colCount }} 列 = {{ cellCount }} 块
       </div>
     </div>
   </div>
@@ -63,20 +91,36 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  rows: {
-    type: Number,
-    default: 2
+  // 边界线百分比数组（含 0/1 端点）：x=列线（垂直），y=行线（水平）
+  xLines: {
+    type: Array,
+    default: () => [0, 1]
   },
-  cols: {
-    type: Number,
-    default: 2
+  yLines: {
+    type: Array,
+    default: () => [0, 1]
+  },
+  // 自定义模式：渲染可拖拽把手
+  editable: {
+    type: Boolean,
+    default: false
   }
 })
+
+const emit = defineEmits(['lines-change'])
 
 const imageRef = ref(null)
 const showGrid = ref(true)
 const imageRect = ref({ width: 0, height: 0 })
 let resizeObserver = null
+
+const colCount = computed(() => props.xLines.length - 1)
+const rowCount = computed(() => props.yLines.length - 1)
+const cellCount = computed(() => rowCount.value * colCount.value)
+
+// 内线（不含端点），用于渲染拖拽把手
+const innerXLlines = computed(() => props.xLines.slice(1, -1))
+const innerYLines = computed(() => props.yLines.slice(1, -1))
 
 const gridContainerStyle = computed(() => ({
   width: `${imageRect.value.width}px`,
@@ -84,17 +128,50 @@ const gridContainerStyle = computed(() => ({
 }))
 
 const getGridCellStyle = (index) => {
-  const row = Math.floor(index / props.cols)
-  const col = index % props.cols
-  const cellWidth = 100 / props.cols
-  const cellHeight = 100 / props.rows
-  
+  const row = Math.floor(index / colCount.value)
+  const col = index % colCount.value
+  const left = props.xLines[col]
+  const right = props.xLines[col + 1]
+  const top = props.yLines[row]
+  const bottom = props.yLines[row + 1]
+
   return {
-    left: `${col * cellWidth}%`,
-    top: `${row * cellHeight}%`,
-    width: `${cellWidth}%`,
-    height: `${cellHeight}%`
+    left: `${left * 100}%`,
+    top: `${top * 100}%`,
+    width: `${(right - left) * 100}%`,
+    height: `${(bottom - top) * 100}%`
   }
+}
+
+// 拖拽分割线：pointermove 实时上报新位置，相邻线间保留 2% 最小间隙
+const startDrag = (e, axis, linesIndex) => {
+  e.preventDefault()
+  const img = imageRef.value
+  if (!img) return
+
+  const rect = img.getBoundingClientRect()
+  const lines = axis === 'x' ? [...props.xLines] : [...props.yLines]
+  const total = axis === 'x' ? rect.width : rect.height
+  if (total <= 0) return
+
+  const MIN_GAP = 0.02
+  const lower = lines[linesIndex - 1] + MIN_GAP
+  const upper = lines[linesIndex + 1] - MIN_GAP
+  if (lower > upper) return
+
+  const onMove = (ev) => {
+    const offset = axis === 'x' ? ev.clientX - rect.left : ev.clientY - rect.top
+    const ratio = Math.min(upper, Math.max(lower, offset / total))
+    emit('lines-change', axis, linesIndex, ratio)
+  }
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onUp)
+    document.body.style.cursor = ''
+  }
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
+  document.body.style.cursor = axis === 'x' ? 'col-resize' : 'row-resize'
 }
 
 const updateImageRect = () => {
@@ -149,10 +226,6 @@ watch(() => props.image, (newImage) => {
       updateImageRect()
     })
   }
-})
-
-watch([() => props.rows, () => props.cols], () => {
-  updateImageRect()
 })
 </script>
 

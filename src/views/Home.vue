@@ -26,11 +26,13 @@
             </span>
           </div>
           
-          <ImagePreview 
-            ref="previewRef" 
-            :image="imageStore.currentImage" 
-            :rows="settingsStore.gridRows" 
-            :cols="settingsStore.gridCols"
+          <ImagePreview
+            ref="previewRef"
+            :image="imageStore.currentImage"
+            :x-lines="previewXLines"
+            :y-lines="previewYLines"
+            :editable="settingsStore.splitMode === 'custom'"
+            @lines-change="handleLinesChange"
           />
           
           <div class="mt-6 flex flex-wrap gap-3">
@@ -87,12 +89,19 @@
       </div>
       
       <div class="space-y-6">
-        <SettingsPanel 
-          v-model:rows="settingsStore.gridRows" 
-          v-model:cols="settingsStore.gridCols"
-          v-model:format="settingsStore.outputFormat"
-          v-model:quality="settingsStore.outputQuality"
-          v-model:namingTemplate="settingsStore.namingTemplate"
+        <SettingsPanel
+          :rows="settingsStore.gridRows"
+          :cols="settingsStore.gridCols"
+          :format="settingsStore.outputFormat"
+          :quality="settingsStore.outputQuality"
+          :naming-template="settingsStore.namingTemplate"
+          :split-mode="settingsStore.splitMode"
+          @update:rows="settingsStore.setGridRows"
+          @update:cols="settingsStore.setGridCols"
+          @update:format="settingsStore.setOutputFormat"
+          @update:quality="settingsStore.setOutputQuality"
+          @update:namingTemplate="settingsStore.setNamingTemplate"
+          @update:splitMode="settingsStore.setSplitMode"
         />
         
         <div v-if="imageStore.currentImage" class="card">
@@ -204,7 +213,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { formatFileSize } from '../utils/helpers'
 import { useImageStore } from '../stores/image'
 import { useSettingsStore } from '../stores/settings'
@@ -218,6 +227,37 @@ const settingsStore = useSettingsStore()
 const toastStore = useToastStore()
 
 const previewRef = ref(null)
+
+// 预览边界线（百分比，含端点）：自定义模式用拖拽线，等分模式按行列数生成
+const previewXLines = computed(() => {
+  const s = settingsStore
+  if (s.splitMode === 'custom' && s.xInnerLines.length > 0) {
+    return [0, ...s.xInnerLines, 1]
+  }
+  return Array.from({ length: s.gridCols + 1 }, (_, i) => i / s.gridCols)
+})
+
+const previewYLines = computed(() => {
+  const s = settingsStore
+  if (s.splitMode === 'custom' && s.yInnerLines.length > 0) {
+    return [0, ...s.yInnerLines, 1]
+  }
+  return Array.from({ length: s.gridRows + 1 }, (_, i) => i / s.gridRows)
+})
+
+// 拖拽回调：linesIndex 为全量边界线数组中的索引（内线索引 = linesIndex - 1）
+const handleLinesChange = (axis, linesIndex, ratio) => {
+  const s = settingsStore
+  if (axis === 'x') {
+    const arr = [...s.xInnerLines]
+    arr[linesIndex - 1] = ratio
+    s.setCustomLines(arr, [...s.yInnerLines])
+  } else {
+    const arr = [...s.yInnerLines]
+    arr[linesIndex - 1] = ratio
+    s.setCustomLines([...s.xInnerLines], arr)
+  }
+}
 
 // 默认命名（复用 store 实现，custom 为空时即返回模板命名）
 const getDefaultFileName = (index, originalName = null) => {

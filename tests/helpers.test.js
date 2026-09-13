@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { generateId, validateImageFile, formatFileSize, parseAspectRatio, calcPieceSizes } from '../src/utils/helpers'
+import {
+  generateId,
+  validateImageFile,
+  formatFileSize,
+  parseAspectRatio,
+  calcPieceSizes,
+  gridPixelLines,
+  customPixelLines
+} from '../src/utils/helpers'
 
 describe('Helper Functions', () => {
   describe('generateId', () => {
@@ -74,6 +82,43 @@ describe('Helper Functions', () => {
 
     it('should handle evenly divisible sizes', () => {
       expect(calcPieceSizes(1000, 4)).toEqual([250, 250, 250, 250])
+    })
+  })
+
+  describe('gridPixelLines', () => {
+    it('should produce boundary lines matching calcPieceSizes prefix sums', () => {
+      expect(gridPixelLines(1000, 3)).toEqual([0, 333, 666, 1000])
+      expect(gridPixelLines(1000, 4)).toEqual([0, 250, 500, 750, 1000])
+      expect(gridPixelLines(100, 1)).toEqual([0, 100])
+    })
+
+    it('should be monotonically increasing and cover total', () => {
+      const lines = gridPixelLines(4001, 7)
+      expect(lines[0]).toBe(0)
+      expect(lines[lines.length - 1]).toBe(4001)
+      expect(lines).toHaveLength(8)
+      for (let i = 1; i < lines.length; i++) {
+        expect(lines[i]).toBeGreaterThan(lines[i - 1])
+      }
+    })
+  })
+
+  describe('customPixelLines', () => {
+    it('should convert inner percents to pixel boundary lines', () => {
+      expect(customPixelLines([0.33, 0.66], 1000)).toEqual([0, 330, 660, 1000])
+    })
+
+    it('should clamp, sort and deduplicate inner lines', () => {
+      // 乱序排序 + 重复去重；越界值钳制到 2%-98%（20 与 980）
+      expect(customPixelLines([0.8, 0.2, 0.2, 1.5, -0.5], 1000)).toEqual([0, 20, 200, 800, 980, 1000])
+    })
+
+    it('should clamp extreme values to 2%-98% range', () => {
+      expect(customPixelLines([0.001, 0.999], 1000)).toEqual([0, 20, 980, 1000])
+    })
+
+    it('should return even split when no inner lines provided', () => {
+      expect(customPixelLines([], 1000)).toEqual([0, 1000])
     })
   })
 })

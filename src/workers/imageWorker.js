@@ -1,5 +1,3 @@
-import { calcPieceSizes } from '../utils/helpers'
-
 self.onmessage = function(e) {
   const { type, data, requestId } = e.data
 
@@ -12,21 +10,21 @@ self.onmessage = function(e) {
   }
 }
 
-function handleSplitGrid(data, requestId) {
-  const { imageBitmap, rows, cols, format, quality, startIndex, originalImageName } = data
+function handleSplitGrid(data) {
+  const { imageBitmap, xLinesPx, yLinesPx, format, quality, startIndex, originalImageName } = data
 
   try {
     const pieces = []
-    // 标准块向下取整、末块补齐余数，确保切割结果完整覆盖原图
-    const colSizes = calcPieceSizes(imageBitmap.width, cols)
-    const rowSizes = calcPieceSizes(imageBitmap.height, rows)
+    // 边界线像素数组由主线程按模式（等分/自定义）计算后传入
+    const rowCount = yLinesPx.length - 1
+    const colCount = xLinesPx.length - 1
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const pieceWidth = colSizes[col]
-        const pieceHeight = rowSizes[row]
-        const offsetX = colSizes.slice(0, col).reduce((a, b) => a + b, 0)
-        const offsetY = rowSizes.slice(0, row).reduce((a, b) => a + b, 0)
+    for (let row = 0; row < rowCount; row++) {
+      for (let col = 0; col < colCount; col++) {
+        const pieceWidth = xLinesPx[col + 1] - xLinesPx[col]
+        const pieceHeight = yLinesPx[row + 1] - yLinesPx[row]
+        const offsetX = xLinesPx[col]
+        const offsetY = yLinesPx[row]
 
         const canvas = new OffscreenCanvas(pieceWidth, pieceHeight)
         const ctx = canvas.getContext('2d')
@@ -53,7 +51,7 @@ function handleSplitGrid(data, requestId) {
           canvas,
           row,
           col,
-          index: startIndex + row * cols + col,
+          index: startIndex + row * colCount + col,
           originalImageName
         })
       }

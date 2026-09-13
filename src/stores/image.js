@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { canvasToBlob, downloadZip } from '../utils/imageProcessing'
-import { calcPieceSizes } from '../utils/helpers'
+import { gridPixelLines, customPixelLines } from '../utils/helpers'
 import JSZip from 'jszip'
 import { useSettingsStore } from './settings'
 
@@ -108,13 +108,25 @@ const getBitmapForImage = async (image) => {
 // worker 请求序号：响应按 requestId 路由，避免共享单例 worker 的消息串扰
 let requestSeq = 0
 
-const splitWithWorker = async (image, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
+// 按分割模式解析某条边的边界像素线：等分模式用 gridPixelLines，自定义模式用百分比内线转换
+const resolvePixelLines = (settings, total, axis) => {
+  const inner = axis === 'x' ? settings.xInnerLines : settings.yInnerLines
+  const count = axis === 'x' ? settings.gridCols : settings.gridRows
+  return settings.splitMode === 'custom' && inner.length > 0
+    ? customPixelLines(inner, total)
+    : gridPixelLines(total, count)
+}
+
+const splitWithWorker = async (image, settings, startIndex = 0, originalImageName = null) => {
   const w = getWorker()
   if (!w) return null
 
   // 缓存的 bitmap 以克隆方式传给 worker（不能 transfer，否则主线程副本被 detach 无法复用）
   const imageBitmap = await getBitmapForImage(image)
   const requestId = ++requestSeq
+  // 自定义线以百分比存储，解码后按实际尺寸转为像素边界线
+  const xLinesPx = resolvePixelLines(settings, imageBitmap.width, 'x')
+  const yLinesPx = resolvePixelLines(settings, imageBitmap.height, 'y')
 
   return new Promise((resolve, reject) => {
     let settled = false
@@ -162,7 +174,15 @@ const splitWithWorker = async (image, rows, cols, format, quality, startIndex = 
       w.postMessage({
         type: 'splitGrid',
         requestId,
-        data: { imageBitmap, rows, cols, format, quality, startIndex, originalImageName }
+        data: {
+          imageBitmap,
+          xLinesPx,
+          yLinesPx,
+          format: settings.outputFormat,
+          quality: settings.outputQuality,
+          startIndex,
+          originalImageName
+        }
       })
     } catch (err) {
       fail(err)
@@ -188,17 +208,19 @@ export const useImageStore = defineStore('image', () => {
   // 打包下载并发编码数：过大易触发内存峰值，8 为吞吐与内存的平衡值
   const DOWNLOAD_BATCH_SIZE = 8
 
-  // 标准块尺寸（末块会补齐余数，略大于此值），与实际切图逻辑一致
+  // 第一块尺寸（自定义模式下各块宽度可能不同），与实际切图逻辑一致
   const pieceWidth = computed(() => {
     if (!imageWidth.value) return 0
     const settings = useSettingsStore()
-    return Math.floor(imageWidth.value / settings.gridCols)
+    const lines = resolvePixelLines(settings, imageWidth.value, 'x')
+    return lines[1] - lines[0]
   })
 
   const pieceHeight = computed(() => {
     if (!imageHeight.value) return 0
     const settings = useSettingsStore()
-    return Math.floor(imageHeight.value / settings.gridRows)
+    const lines = resolvePixelLines(settings, imageHeight.value, 'y')
+    return lines[1] - lines[0]
   })
 
   const displayCols = computed(() => {
@@ -294,18 +316,20 @@ export const useImageStore = defineStore('image', () => {
     return img
   }
 
-  const splitImageToPieces = async (img, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
+  const splitImageToPieces = async (img, settings, startIndex = 0, originalImageName = null) => {
     const pieces = []
-    // 标准块向下取整、末块补齐余数，确保切割结果完整覆盖原图
-    const colSizes = calcPieceSizes(img.width, cols)
-    const rowSizes = calcPieceSizes(img.height, rows)
+    // 边界线像素数组（等分/自定义统一入口）
+    const xLinesPx = resolvePixelLines(settings, img.width, 'x')
+    const yLinesPx = resolvePixelLines(settings, img.height, 'y')
+    const format = settings.outputFormat
+    const quality = settings.outputQuality
 
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        const pieceW = colSizes[col]
-        const pieceH = rowSizes[row]
-        const offsetX = colSizes.slice(0, col).reduce((a, b) => a + b, 0)
-        const offsetY = rowSizes.slice(0, row).reduce((a, b) => a + b, 0)
+    for (let row = 0; row < yLinesPx.length - 1; row++) {
+      for (let col = 0; col < xLinesPx.length - 1; col++) {
+        const pieceW = xLinesPx[col + 1] - xLinesPx[col]
+        const pieceH = yLinesPx[row + 1] - yLinesPx[row]
+        const offsetX = xLinesPx[col]
+        const offsetY = yLinesPx[row]
 
         const canvas = document.createElement('canvas')
         canvas.width = pieceW
@@ -337,7 +361,7 @@ export const useImageStore = defineStore('image', () => {
         pieces.push(createPieceFromBlob(blob, {
           row,
           col,
-          index: startIndex + row * cols + col,
+          index: startIndex + row * (xLinesPx.length - 1) + col,
           format,
           originalImageName
         }))
@@ -361,13 +385,7 @@ export const useImageStore = defineStore('image', () => {
       let pieces
 
       if (checkWorkerSupport()) {
-        const workerPieces = await splitWithWorker(
-          currentImage.value,
-          settings.gridRows,
-          settings.gridCols,
-          settings.outputFormat,
-          settings.outputQuality
-        )
+        const workerPieces = await splitWithWorker(currentImage.value, settings)
         pieces = workerPieces.map((p) => createPieceFromBlob(p.blob, {
           row: p.row,
           col: p.col,
@@ -376,7 +394,7 @@ export const useImageStore = defineStore('image', () => {
         }))
       } else {
         const img = await loadImage(currentImage.value.url)
-        pieces = await splitImageToPieces(img, settings.gridRows, settings.gridCols, settings.outputFormat, settings.outputQuality)
+        pieces = await splitImageToPieces(img, settings)
       }
 
       processingProgress.value = 100
@@ -411,15 +429,7 @@ export const useImageStore = defineStore('image', () => {
         let pieces
 
         if (checkWorkerSupport()) {
-          const workerPieces = await splitWithWorker(
-            image,
-            settings.gridRows,
-            settings.gridCols,
-            settings.outputFormat,
-            settings.outputQuality,
-            allPieces.length,
-            image.name
-          )
+          const workerPieces = await splitWithWorker(image, settings, allPieces.length, image.name)
           pieces = workerPieces.map((p) => createPieceFromBlob(p.blob, {
             row: p.row,
             col: p.col,
@@ -429,15 +439,7 @@ export const useImageStore = defineStore('image', () => {
           }))
         } else {
           const img = await loadImage(image.url)
-          pieces = await splitImageToPieces(
-            img,
-            settings.gridRows,
-            settings.gridCols,
-            settings.outputFormat,
-            settings.outputQuality,
-            allPieces.length,
-            image.name
-          )
+          pieces = await splitImageToPieces(img, settings, allPieces.length, image.name)
         }
 
         allPieces.push(...pieces)

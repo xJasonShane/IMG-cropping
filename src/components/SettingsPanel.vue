@@ -11,6 +11,33 @@
     <div class="space-y-6">
       <div>
         <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">网格设置</h4>
+
+        <div class="flex rounded-lg border-2 border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
+          <button
+            type="button"
+            class="flex-1 py-2 text-sm font-medium transition-all"
+            :class="splitMode === 'grid'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+            @click="$emit('update:splitMode', 'grid')"
+          >
+            等分分割
+          </button>
+          <button
+            type="button"
+            class="flex-1 py-2 text-sm font-medium transition-all"
+            :class="splitMode === 'custom'
+              ? 'bg-primary-500 text-white'
+              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+            @click="$emit('update:splitMode', 'custom')"
+          >
+            自定义分割线
+          </button>
+        </div>
+        <p v-if="splitMode === 'custom'" class="text-xs text-primary-500/90 mb-3">
+          已切换到自定义模式：在预览图上拖动高亮分割线，调整各分块大小
+        </p>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
@@ -147,10 +174,14 @@ defineProps({
   namingTemplate: {
     type: String,
     default: '{original}_{index}'
+  },
+  splitMode: {
+    type: String,
+    default: 'grid'
   }
 })
 
-const emit = defineEmits(['update:rows', 'update:cols', 'update:format', 'update:quality', 'update:namingTemplate'])
+const emit = defineEmits(['update:rows', 'update:cols', 'update:format', 'update:quality', 'update:namingTemplate', 'update:splitMode'])
 
 const presets = [
   { label: '2×2', rows: 2, cols: 2 },

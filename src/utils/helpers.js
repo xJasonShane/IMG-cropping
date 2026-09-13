@@ -60,3 +60,29 @@ export const calcPieceSizes = (total, count) => {
   sizes[count - 1] = total - base * (count - 1)
   return sizes
 }
+
+/**
+ * 等分模式的边界像素线：长度 count+1，首尾为 0 与 total，
+ * 中间为各块前缀和（与 calcPieceSizes 完全等价）。
+ */
+export const gridPixelLines = (total, count) => {
+  const sizes = calcPieceSizes(total, count)
+  const lines = [0]
+  for (let i = 0; i < count - 1; i++) {
+    lines.push(lines[i] + sizes[i])
+  }
+  lines.push(total)
+  return lines
+}
+
+/**
+ * 自定义分割线：内线百分比（0-1，不含端点）转像素边界线。
+ * 去重、钳制到 [2%, 98%]、排序，保证线序有效且不产生空块。
+ */
+export const customPixelLines = (innerPercents, total) => {
+  const clamped = [...new Set(innerPercents)]
+    .map((p) => Math.round(Math.min(0.98, Math.max(0.02, Number(p) || 0)) * total))
+    .sort((a, b) => a - b)
+  const inner = clamped.filter((v, i) => v > 0 && v < total && (i === 0 || v !== clamped[i - 1]))
+  return [0, ...inner, total]
+}

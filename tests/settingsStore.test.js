@@ -94,4 +94,53 @@ describe('Settings Store', () => {
     settings.setNamingTemplate('{original}_r{index}')
     expect(imageStore.generateFileName(0)).toBe('photo_r001')
   })
+
+  describe('custom split lines', () => {
+    it('should initialize even inner lines when entering custom mode', () => {
+      const store = useSettingsStore()
+
+      store.setSplitMode('custom')
+
+      expect(store.splitMode).toBe('custom')
+      expect(store.xInnerLines).toEqual([0.5])
+      expect(store.yInnerLines).toEqual([0.5])
+      expect(store.gridRows).toBe(2)
+      expect(store.gridCols).toBe(2)
+    })
+
+    it('should derive rows/cols from custom lines', () => {
+      const store = useSettingsStore()
+
+      store.setSplitMode('custom')
+      store.setCustomLines([0.3, 0.6], [0.5])
+
+      expect(store.gridCols).toBe(3)
+      expect(store.gridRows).toBe(2)
+    })
+
+    it('should reset to even lines when adjusting sliders in custom mode', () => {
+      const store = useSettingsStore()
+
+      store.setSplitMode('custom')
+      store.setCustomLines([0.2, 0.8], [0.7])
+
+      store.setGridRows(4)
+      store.setGridCols(2)
+
+      expect(store.yInnerLines).toEqual([0.25, 0.5, 0.75])
+      expect(store.xInnerLines).toEqual([0.5])
+      expect(store.gridRows).toBe(4)
+    })
+
+    it('should keep grid mode unchanged by slider actions', () => {
+      const store = useSettingsStore()
+
+      store.setSplitMode('grid')
+      store.setGridRows(3)
+
+      expect(store.splitMode).toBe('grid')
+      expect(store.yInnerLines).toEqual([])
+      expect(store.gridRows).toBe(3)
+    })
+  })
 })
