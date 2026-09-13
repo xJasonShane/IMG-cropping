@@ -161,10 +161,11 @@ IMG-cropping/
 ├── dist/                # 构建输出
 ├── package.json
 ├── vite.config.js
-├── tailwind.config.js
 ├── postcss.config.js
 └── README.md
 ```
+
+> 注：本项目使用 Tailwind CSS v4，主题色板与深色模式变体在 `src/style.css` 中通过 `@theme` 与 `@custom-variant` 指令定义，无 `tailwind.config.js`。
 
 ## 使用说明
 
