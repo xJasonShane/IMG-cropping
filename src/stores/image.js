@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { canvasToBlob, downloadZip } from '../utils/imageProcessing'
+import { calcPieceSizes } from '../utils/helpers'
 import JSZip from 'jszip'
 import { useSettingsStore } from './settings'
 
@@ -141,16 +142,17 @@ export const useImageStore = defineStore('image', () => {
   const processingProgress = ref(0)
   const customFileNames = ref({})
 
+  // 标准块尺寸（末块会补齐余数，略大于此值），与实际切图逻辑一致
   const pieceWidth = computed(() => {
     if (!imageWidth.value) return 0
     const settings = useSettingsStore()
-    return Math.round(imageWidth.value / settings.gridCols)
+    return Math.floor(imageWidth.value / settings.gridCols)
   })
 
   const pieceHeight = computed(() => {
     if (!imageHeight.value) return 0
     const settings = useSettingsStore()
-    return Math.round(imageHeight.value / settings.gridRows)
+    return Math.floor(imageHeight.value / settings.gridRows)
   })
 
   const displayCols = computed(() => {
@@ -241,11 +243,17 @@ export const useImageStore = defineStore('image', () => {
 
   const splitImageToPieces = (img, rows, cols, format, quality, startIndex = 0, originalImageName = null) => {
     const pieces = []
-    const pieceW = Math.floor(img.width / cols)
-    const pieceH = Math.floor(img.height / rows)
+    // 标准块向下取整、末块补齐余数，确保切割结果完整覆盖原图
+    const colSizes = calcPieceSizes(img.width, cols)
+    const rowSizes = calcPieceSizes(img.height, rows)
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
+        const pieceW = colSizes[col]
+        const pieceH = rowSizes[row]
+        const offsetX = colSizes.slice(0, col).reduce((a, b) => a + b, 0)
+        const offsetY = rowSizes.slice(0, row).reduce((a, b) => a + b, 0)
+
         const canvas = document.createElement('canvas')
         canvas.width = pieceW
         canvas.height = pieceH
@@ -259,8 +267,8 @@ export const useImageStore = defineStore('image', () => {
 
         ctx.drawImage(
           img,
-          col * pieceW,
-          row * pieceH,
+          offsetX,
+          offsetY,
           pieceW,
           pieceH,
           0,

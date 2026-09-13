@@ -1,3 +1,5 @@
+import { calcPieceSizes } from '../utils/helpers'
+
 self.onmessage = function(e) {
   const { type, data } = e.data
 
@@ -15,11 +17,17 @@ function handleSplitGrid(data) {
 
   try {
     const pieces = []
-    const pieceWidth = Math.floor(imageBitmap.width / cols)
-    const pieceHeight = Math.floor(imageBitmap.height / rows)
+    // 标准块向下取整、末块补齐余数，确保切割结果完整覆盖原图
+    const colSizes = calcPieceSizes(imageBitmap.width, cols)
+    const rowSizes = calcPieceSizes(imageBitmap.height, rows)
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
+        const pieceWidth = colSizes[col]
+        const pieceHeight = rowSizes[row]
+        const offsetX = colSizes.slice(0, col).reduce((a, b) => a + b, 0)
+        const offsetY = rowSizes.slice(0, row).reduce((a, b) => a + b, 0)
+
         const canvas = new OffscreenCanvas(pieceWidth, pieceHeight)
         const ctx = canvas.getContext('2d')
 
@@ -31,8 +39,8 @@ function handleSplitGrid(data) {
 
         ctx.drawImage(
           imageBitmap,
-          col * pieceWidth,
-          row * pieceHeight,
+          offsetX,
+          offsetY,
           pieceWidth,
           pieceHeight,
           0,

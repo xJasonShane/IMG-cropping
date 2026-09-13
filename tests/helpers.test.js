@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateId, validateImageFile, formatFileSize, parseAspectRatio } from '../src/utils/helpers'
+import { generateId, validateImageFile, formatFileSize, parseAspectRatio, calcPieceSizes } from '../src/utils/helpers'
 
 describe('Helper Functions', () => {
   describe('generateId', () => {
@@ -50,6 +50,30 @@ describe('Helper Functions', () => {
 
     it('should return NaN for free aspect ratio', () => {
       expect(parseAspectRatio('free')).toBeNaN()
+    })
+  })
+
+  describe('calcPieceSizes', () => {
+    it('should split with remainder added to the last piece', () => {
+      expect(calcPieceSizes(1000, 3)).toEqual([333, 333, 334])
+      expect(calcPieceSizes(10, 3)).toEqual([3, 3, 4])
+      expect(calcPieceSizes(7, 2)).toEqual([3, 4])
+    })
+
+    it('should cover the total size completely', () => {
+      for (const [total, count] of [[4000, 7], [1001, 13], [99, 20], [50, 3]]) {
+        const sizes = calcPieceSizes(total, count)
+        expect(sizes).toHaveLength(count)
+        expect(sizes.reduce((a, b) => a + b, 0)).toBe(total)
+      }
+    })
+
+    it('should handle single piece', () => {
+      expect(calcPieceSizes(1000, 1)).toEqual([1000])
+    })
+
+    it('should handle evenly divisible sizes', () => {
+      expect(calcPieceSizes(1000, 4)).toEqual([250, 250, 250, 250])
     })
   })
 })

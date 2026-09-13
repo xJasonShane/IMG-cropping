@@ -92,3 +92,14 @@ export const formatFileSize = (bytes) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
+
+/**
+ * 计算某条边按 count 等分后每块的尺寸：
+ * 标准块向下取整，最后一块补齐全部余数，保证切割结果完整覆盖原图。
+ */
+export const calcPieceSizes = (total, count) => {
+  const base = Math.floor(total / count)
+  const sizes = new Array(count).fill(base)
+  sizes[count - 1] = total - base * (count - 1)
+  return sizes
+}
