@@ -177,8 +177,15 @@ export const useImageStore = defineStore('image', () => {
   const imageWidth = ref(0)
   const imageHeight = ref(0)
   const isProcessing = ref(false)
+  const isDownloading = ref(false)
   const processingProgress = ref(0)
   const customFileNames = ref({})
+
+  // 批量下载取消标志（非响应式，仅用于批间中断判断）
+  let downloadCancelled = false
+
+  // 打包下载并发编码数：过大易触发内存峰值，8 为吞吐与内存的平衡值
+  const DOWNLOAD_BATCH_SIZE = 8
 
   // 标准块尺寸（末块会补齐余数，略大于此值），与实际切图逻辑一致
   const pieceWidth = computed(() => {
@@ -541,31 +548,60 @@ export const useImageStore = defineStore('image', () => {
 
     try {
       isProcessing.value = true
+      isDownloading.value = true
+      downloadCancelled = false
       processingProgress.value = 0
 
       const zip = new JSZip()
       let invalidNameCount = 0
+      const total = splitPieces.value.length
 
-      for (let i = 0; i < splitPieces.value.length; i++) {
-        const piece = splitPieces.value[i]
-        if (checkCustomNameWarning(i)) invalidNameCount++
-        const blob = await getDownloadBlob(piece, settings)
-        const filename = `${generateFileName(i, piece.originalImageName)}.${settings.outputFormat}`
-        zip.file(filename, blob)
-        processingProgress.value = Math.round(((i + 1) / splitPieces.value.length) * 100)
+      // 分批并行编码：格式一致时 getDownloadBlob 直接复用 blob，仅格式变更时才有真实编码开销
+      for (let i = 0; i < total; i += DOWNLOAD_BATCH_SIZE) {
+        if (downloadCancelled) {
+          return { success: false, cancelled: true }
+        }
+
+        const batch = splitPieces.value.slice(i, i + DOWNLOAD_BATCH_SIZE)
+        const entries = await Promise.all(
+          batch.map(async (piece, j) => {
+            const idx = i + j
+            if (checkCustomNameWarning(idx)) invalidNameCount++
+            const blob = await getDownloadBlob(piece, settings)
+            return {
+              blob,
+              filename: `${generateFileName(idx, piece.originalImageName)}.${settings.outputFormat}`
+            }
+          })
+        )
+
+        entries.forEach(({ blob, filename }) => zip.file(filename, blob))
+        processingProgress.value = Math.min(100, Math.round(((i + DOWNLOAD_BATCH_SIZE) / total) * 100))
+      }
+
+      if (downloadCancelled) {
+        return { success: false, cancelled: true }
       }
 
       const zipBlob = await zip.generateAsync({ type: 'blob' })
       const originalName = currentImage.value?.name?.replace(/\.[^/.]+$/, '') || 'images'
       downloadZip(zipBlob, `${originalName}_split.zip`)
 
-      return { success: true, count: splitPieces.value.length, invalidNameCount }
+      return { success: true, count: total, invalidNameCount }
     } catch (error) {
       console.error('Download error:', error)
       return { success: false, error: error.message }
     } finally {
       isProcessing.value = false
+      isDownloading.value = false
+      downloadCancelled = false
       processingProgress.value = 0
+    }
+  }
+
+  const cancelDownload = () => {
+    if (isDownloading.value) {
+      downloadCancelled = true
     }
   }
 
@@ -576,6 +612,7 @@ export const useImageStore = defineStore('image', () => {
     imageWidth,
     imageHeight,
     isProcessing,
+    isDownloading,
     processingProgress,
     customFileNames,
     pieceWidth,
@@ -594,6 +631,7 @@ export const useImageStore = defineStore('image', () => {
     generateFileName,
     validateFileName,
     downloadPiece,
-    downloadAll
+    downloadAll,
+    cancelDownload
   }
 })

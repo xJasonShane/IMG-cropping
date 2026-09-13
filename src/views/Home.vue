@@ -59,13 +59,15 @@
             
             <button
               v-if="imageStore.splitPieces.length > 0"
-              @click="downloadAll"
+              @click="imageStore.isDownloading ? imageStore.cancelDownload() : downloadAll()"
+              :disabled="imageStore.isProcessing && !imageStore.isDownloading"
               class="btn-primary flex items-center space-x-2"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
               </svg>
-              <span>下载全部 ({{ imageStore.splitPieces.length }}张)</span>
+              <span v-if="imageStore.isDownloading">取消下载</span>
+              <span v-else>下载全部 ({{ imageStore.splitPieces.length }}张)</span>
             </button>
           </div>
         </div>
@@ -266,6 +268,10 @@ const downloadPiece = async (index) => {
 
 const downloadAll = async () => {
   const result = await imageStore.downloadAll()
+  if (result?.cancelled) {
+    toastStore.showToast('已取消下载', 'info')
+    return
+  }
   if (result?.success) {
     if (result.invalidNameCount > 0) {
       toastStore.showToast(`下载成功，但 ${result.invalidNameCount} 个自定义文件名非法，已回退为默认命名`, 'error')
