@@ -11,10 +11,7 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
       <div class="lg:col-span-2 space-y-6">
-        <ImageUpload 
-          @upload="handleUpload" 
-          @image-selected="handleImageSelected"
-        />
+        <ImageUpload />
         
         <div v-if="imageStore.currentImage" class="card">
           <div class="flex items-center justify-between mb-4">
@@ -204,14 +201,6 @@ const settingsStore = useSettingsStore()
 const toastStore = useToastStore()
 
 const previewRef = ref(null)
-
-const handleUpload = (image) => {
-  imageStore.addUploadedImage(image)
-}
-
-const handleImageSelected = (image) => {
-  imageStore.setImage(image)
-}
 
 const getDefaultFileName = (index, originalName = null) => {
   const name = originalName || imageStore.currentImage?.name?.replace(/\.[^/.]+$/, '') || 'image'

@@ -86,8 +86,6 @@ import { useImageStore } from '../stores/image'
 import { useToastStore } from '../stores/toast'
 import { validateImageFile, readFileAsDataURL, generateId } from '../utils/helpers'
 
-const emit = defineEmits(['upload', 'imageSelected'])
-
 const imageStore = useImageStore()
 const toastStore = useToastStore()
 const fileInput = ref(null)
@@ -168,7 +166,6 @@ const processFiles = async (files) => {
       }
       
       successCount++
-      emit('upload', image)
     } catch (error) {
       console.error('File processing error:', error)
       toastStore.showToast(file.name + ': ' + error.message, 'error')
@@ -185,7 +182,6 @@ const processFiles = async (files) => {
 const selectImage = (image) => {
   currentImageId.value = image.id
   imageStore.setImage(image)
-  emit('imageSelected', image)
 }
 
 const removeImage = (index) => {
