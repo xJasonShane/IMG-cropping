@@ -1,6 +1,8 @@
 <template>
   <div class="card">
+    <!-- 空状态：完整拖放区；已有图片后折叠为一行紧凑入口，避免与预览区重复占位 -->
     <div
+      v-if="images.length === 0"
       class="upload-zone border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       :class="[
         isDragging ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 transform scale-105' : 'hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:shadow-lg'
@@ -24,9 +26,9 @@
         aria-label="选择图片文件"
         @change="handleFileSelect"
       />
-      
+
       <div class="flex flex-col items-center space-y-4">
-        <div 
+        <div
           class="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center transition-transform duration-300"
           :class="isDragging ? 'scale-110' : ''"
         >
@@ -34,7 +36,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
           </svg>
         </div>
-        
+
         <div>
           <p class="text-lg font-medium text-gray-700 dark:text-gray-300">
             拖放图片到这里或点击上传
@@ -43,18 +45,33 @@
             支持 JPG、PNG、WebP 格式，支持批量上传
           </p>
         </div>
-        
+
         <button class="btn-primary" type="button">
           选择图片
         </button>
       </div>
     </div>
-    
-    <div v-if="images.length > 0" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-        已上传图片 ({{ images.length }}张)
-      </h4>
-      <div class="flex flex-wrap gap-2">
+
+    <!-- 折叠态：标题行 + 添加入口 + 缩略图列表 -->
+    <template v-else>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          已上传图片 ({{ images.length }}张)
+        </h4>
+        <button type="button" class="btn-secondary" @click="triggerFileInput">
+          添加图片
+        </button>
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          multiple
+          class="hidden"
+          aria-label="选择图片文件"
+          @change="handleFileSelect"
+        />
+      </div>
+      <div class="flex flex-wrap gap-2 mt-3">
         <div
           v-for="(image, index) in images"
           :key="image.id"
@@ -66,10 +83,11 @@
                ]"
                @click="selectImage(image)">
             <img :src="image.url" :alt="image.name" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <button
                 @click.stop="removeImage(index)"
-                class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                class="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors pointer-events-auto"
+                title="删除此图片"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -82,7 +100,10 @@
           </p>
         </div>
       </div>
-    </div>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">
+        提示：将图片拖到页面任意位置也可快速上传
+      </p>
+    </template>
 
     <!-- 整页拖放遮罩：拖拽文件到页面任意位置均可上传 -->
     <Teleport to="body">
@@ -204,7 +225,10 @@ const handleFileSelect = async (e) => {
 
 const processFiles = async (files) => {
   if (isProcessing.value) return
-  
+
+  // 空入参（如 change 事件被程序性触发）静默忽略，避免误报错误提示
+  if (!files || files.length === 0) return
+
   const imageFiles = files.filter(file => file.type.startsWith('image/'))
   
   if (imageFiles.length === 0) {
