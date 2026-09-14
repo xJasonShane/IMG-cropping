@@ -16,27 +16,6 @@
           </router-link>
         </div>
 
-        <nav class="hidden md:flex items-center space-x-1">
-          <router-link
-            to="/"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            :class="$route.path === '/'
-              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'"
-          >
-            首页
-          </router-link>
-          <router-link
-            to="/about"
-            class="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-            :class="$route.path === '/about'
-              ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-              : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'"
-          >
-            关于
-          </router-link>
-        </nav>
-
         <div class="flex items-center space-x-1">
           <button
             @click="toggleDarkMode"
@@ -50,41 +29,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
             </svg>
           </button>
-
-          <button
-            @click="toggleMobileMenu"
-            class="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            aria-label="切换导航菜单"
-          >
-            <svg v-if="isMobileMenuOpen" class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-            <svg v-else class="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-          </button>
         </div>
-      </div>
-
-      <div v-if="isMobileMenuOpen" class="md:hidden py-3 border-t border-gray-200 dark:border-gray-700">
-        <nav class="flex flex-col space-y-1">
-          <router-link
-            to="/"
-            @click="isMobileMenuOpen = false"
-            class="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
-            :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-500 dark:text-primary-400': $route.path === '/' }"
-          >
-            首页
-          </router-link>
-          <router-link
-            to="/about"
-            @click="isMobileMenuOpen = false"
-            class="px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium"
-            :class="{ 'bg-primary-50 dark:bg-primary-900/20 text-primary-500 dark:text-primary-400': $route.path === '/about' }"
-          >
-            关于
-          </router-link>
-        </nav>
       </div>
     </div>
   </header>
@@ -94,7 +39,6 @@
 import { ref, onMounted } from 'vue'
 
 const isDark = ref(false)
-const isMobileMenuOpen = ref(false)
 
 const toggleDarkMode = () => {
   isDark.value = !isDark.value
@@ -105,10 +49,6 @@ const toggleDarkMode = () => {
     document.documentElement.classList.remove('dark')
     localStorage.setItem('darkMode', 'false')
   }
-}
-
-const toggleMobileMenu = () => {
-  isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
 
 onMounted(() => {
