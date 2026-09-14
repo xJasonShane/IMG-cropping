@@ -9,7 +9,7 @@
             ? 'bg-primary-500 text-white'
             : step.state === 'active'
               ? 'border-2 border-primary-500 text-primary-500'
-              : 'border-2 border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'"
+              : 'border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'"
           :aria-current="step.state === 'active' ? 'step' : undefined"
         >
           <svg v-if="step.state === 'done'" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,7 +23,7 @@
             ? 'text-gray-900 dark:text-white'
             : step.state === 'done'
               ? 'text-gray-600 dark:text-gray-300'
-              : 'text-gray-400 dark:text-gray-500'"
+              : 'text-gray-500 dark:text-gray-400'"
         >
           {{ step.label }}
         </span>
@@ -239,6 +239,7 @@
                 </span>
                 <input
                   type="text"
+                  :aria-label="`自定义文件名 ${index + 1}`"
                   :value="getDisplayFileName(index, piece.originalImageName)"
                   @input="handleFileNameInput(index, $event.target.value, piece.originalImageName)"
                   :class="getInputClass(index, piece.originalImageName)"

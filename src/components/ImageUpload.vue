@@ -100,7 +100,7 @@
           </p>
         </div>
       </div>
-      <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
         提示：将图片拖到页面任意位置也可快速上传
       </p>
     </template>

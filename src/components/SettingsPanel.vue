@@ -41,35 +41,37 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="grid-rows" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               行数: <span class="font-semibold text-primary-500">{{ rows }}</span>
             </label>
             <input
               type="range"
+              id="grid-rows"
               :value="rows"
               @input="$emit('update:rows', Number($event.target.value))"
               min="1"
               max="20"
               class="w-full"
             />
-            <div class="flex justify-between text-xs text-gray-400 mt-1">
+            <div class="flex justify-between text-xs text-gray-500 mt-1" aria-hidden="true">
               <span>1</span>
               <span>20</span>
             </div>
           </div>
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="grid-cols" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               列数: <span class="font-semibold text-primary-500">{{ cols }}</span>
             </label>
             <input
               type="range"
+              id="grid-cols"
               :value="cols"
               @input="$emit('update:cols', Number($event.target.value))"
               min="1"
               max="20"
               class="w-full"
             />
-            <div class="flex justify-between text-xs text-gray-400 mt-1">
+            <div class="flex justify-between text-xs text-gray-500 mt-1" aria-hidden="true">
               <span>1</span>
               <span>20</span>
             </div>
@@ -100,11 +102,12 @@
         <h4 class="section-title"><span class="step-badge">3</span>间隙与裁边</h4>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="gap-size" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               分块间隙: <span class="font-semibold text-primary-500">{{ gapSize }}px</span>
             </label>
             <input
               type="range"
+              id="gap-size"
               :value="gapSize"
               @input="$emit('update:gapSize', Number($event.target.value))"
               min="0"
@@ -113,11 +116,12 @@
             />
           </div>
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="trim-size" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               边缘裁切: <span class="font-semibold text-primary-500">{{ trimSize }}px</span>
             </label>
             <input
               type="range"
+              id="trim-size"
               :value="trimSize"
               @input="$emit('update:trimSize', Number($event.target.value))"
               min="0"
@@ -133,10 +137,11 @@
         <h4 class="section-title"><span class="step-badge">4</span>输出设置</h4>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="output-format" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               输出格式
             </label>
             <select
+              id="output-format"
               :value="format"
               @change="$emit('update:format', $event.target.value)"
               class="input-field"
@@ -148,11 +153,12 @@
           </div>
 
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="output-quality" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               质量: <span class="font-semibold text-primary-500">{{ quality }}%</span>
             </label>
             <input
               type="range"
+              id="output-quality"
               :value="quality"
               @input="$emit('update:quality', Number($event.target.value))"
               min="10"
@@ -162,10 +168,11 @@
           </div>
 
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="scale-target" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               输出缩放
             </label>
             <select
+              id="scale-target"
               :value="scaleTarget"
               @change="$emit('update:scaleTarget', Number($event.target.value))"
               class="input-field"
@@ -177,21 +184,22 @@
               <option :value="1080">宽度 1080px</option>
               <option :value="2048">宽度 2048px</option>
             </select>
-            <p class="text-xs text-gray-400 mt-1">大于目标宽度的分块将等比缩小</p>
+            <p class="text-xs text-gray-500 mt-1">大于目标宽度的分块将等比缩小</p>
           </div>
 
           <div>
-            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="naming-template" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
               命名模板
             </label>
             <input
               type="text"
+              id="naming-template"
               :value="namingTemplate"
               @input="$emit('update:namingTemplate', $event.target.value)"
               class="input-field"
               placeholder="{original}_{index}"
             />
-            <p class="text-xs text-gray-400 mt-1">
+            <p class="text-xs text-gray-500 mt-1">
               {original} = 原文件名, {index} = 序号
             </p>
           </div>
