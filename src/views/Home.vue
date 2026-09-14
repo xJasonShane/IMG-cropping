@@ -36,15 +36,15 @@
       ></li>
     </ol>
 
-    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-6">
-      <!-- ① 上传区 -->
-      <section class="lg:col-start-1 lg:row-start-1" aria-label="上传图片">
+    <div class="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-6">
+      <!-- ① 上传区：桌面端居右 -->
+      <section class="lg:col-start-2 lg:row-start-1" aria-label="上传图片">
         <ImageUpload />
       </section>
 
-      <!-- ② 设置栏：桌面端居右，移动端位于上传与预览之间，符合操作顺序 -->
+      <!-- ② 设置栏：桌面端居左，移动端位于上传与预览之间，符合操作顺序 -->
       <aside
-        class="space-y-6 lg:col-start-2 lg:row-start-1"
+        class="space-y-6 lg:col-start-1 lg:row-start-1"
         :class="{ 'lg:row-span-3': imageStore.currentImage }"
         aria-label="分割设置"
       >
@@ -112,7 +112,7 @@
       </aside>
 
       <!-- ③ 预览与操作 -->
-      <section v-if="imageStore.currentImage" class="card lg:col-start-1" aria-label="预览与分割操作">
+      <section v-if="imageStore.currentImage" class="card lg:col-start-2" aria-label="预览与分割操作">
         <div class="flex items-center justify-between mb-4">
           <h3 class="panel-title mb-0">
             <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +190,7 @@
       </section>
 
       <!-- ④ 分割结果 -->
-      <section v-if="imageStore.splitPieces.length > 0" class="card lg:col-start-1" aria-label="分割结果">
+      <section v-if="imageStore.splitPieces.length > 0" class="card lg:col-start-2" aria-label="分割结果">
         <h3 class="panel-title">
           <svg class="w-5 h-5 mr-2 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
