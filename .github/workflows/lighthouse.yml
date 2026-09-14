@@ -6,9 +6,11 @@ on:
     paths:
       - 'src/**'
       - 'public/**'
+      - 'index.html'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.js'
+      - 'postcss.config.js'
       - 'lighthouserc.json'
       - '.github/workflows/lighthouse.yml'
   workflow_dispatch:
@@ -38,10 +40,14 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          NODE_ENV: production
 
       - name: Run Lighthouse CI
-        run: |
-          npm install -g @lhci/cli@0.14.x
-          lhci autorun
+        run: npx --yes @lhci/cli@0.14.x autorun
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+          retention-days: 7
