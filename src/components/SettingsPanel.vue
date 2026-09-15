@@ -6,10 +6,13 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
       </svg>
       分割设置
+      <span class="ml-auto px-2 py-0.5 text-xs font-semibold rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">
+        共 {{ rows * cols }} 张
+      </span>
     </h3>
 
-    <div class="space-y-5">
-      <!-- ① 网格设置 -->
+    <div class="space-y-4">
+      <!-- ① 网格设置（含快速预设） -->
       <section aria-label="网格设置">
         <h4 class="section-title"><span class="step-badge">1</span>网格设置</h4>
 
@@ -41,8 +44,9 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label for="grid-rows" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-              行数: <span class="font-semibold text-primary-500">{{ rows }}</span>
+            <label for="grid-rows" class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1.5">
+              <span>行数</span>
+              <span class="font-semibold text-primary-500">{{ rows }}</span>
             </label>
             <input
               type="range"
@@ -53,14 +57,11 @@
               max="20"
               class="w-full"
             />
-            <div class="flex justify-between text-xs text-gray-500 mt-1" aria-hidden="true">
-              <span>1</span>
-              <span>20</span>
-            </div>
           </div>
           <div>
-            <label for="grid-cols" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-              列数: <span class="font-semibold text-primary-500">{{ cols }}</span>
+            <label for="grid-cols" class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1.5">
+              <span>列数</span>
+              <span class="font-semibold text-primary-500">{{ cols }}</span>
             </label>
             <input
               type="range"
@@ -71,39 +72,36 @@
               max="20"
               class="w-full"
             />
-            <div class="flex justify-between text-xs text-gray-500 mt-1" aria-hidden="true">
-              <span>1</span>
-              <span>20</span>
-            </div>
+          </div>
+        </div>
+
+        <!-- 快速预设：网格设置的快捷入口，视觉上次一级 -->
+        <div class="mt-3">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-1.5">快速预设</p>
+          <div class="grid grid-cols-6 gap-1.5">
+            <button
+              v-for="preset in presets"
+              :key="preset.label"
+              @click="applyPreset(preset)"
+              class="py-1.5 text-xs rounded-md border transition-all"
+              :class="rows === preset.rows && cols === preset.cols
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/25 text-primary-600 dark:text-primary-400 font-semibold'
+                : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 text-gray-600 dark:text-gray-300'"
+            >
+              {{ preset.label }}
+            </button>
           </div>
         </div>
       </section>
 
-      <!-- ② 快速预设：隶属网格设置，视觉上次一级 -->
-      <section aria-label="快速预设">
-        <h4 class="section-title"><span class="step-badge">2</span>快速预设</h4>
-        <div class="grid grid-cols-3 gap-2">
-          <button
-            v-for="preset in presets"
-            :key="preset.label"
-            @click="applyPreset(preset)"
-            class="px-3 py-2 text-sm rounded-lg border-2 transition-all"
-            :class="rows === preset.rows && cols === preset.cols
-              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-              : 'border-gray-200 dark:border-gray-700 hover:border-primary-300 text-gray-700 dark:text-gray-300'"
-          >
-            {{ preset.label }}
-          </button>
-        </div>
-      </section>
-
-      <!-- ③ 间隙与裁边 -->
+      <!-- ② 间隙与裁边 -->
       <section class="pt-4 border-t border-gray-200 dark:border-gray-700" aria-label="间隙与裁边">
-        <h4 class="section-title"><span class="step-badge">3</span>间隙与裁边</h4>
-        <div class="space-y-4">
+        <h4 class="section-title"><span class="step-badge">2</span>间隙与裁边</h4>
+        <div class="grid grid-cols-2 gap-4">
           <div>
-            <label for="gap-size" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-              分块间隙: <span class="font-semibold text-primary-500">{{ gapSize }}px</span>
+            <label for="gap-size" class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1.5">
+              <span>分块间隙</span>
+              <span class="font-semibold text-primary-500">{{ gapSize }}px</span>
             </label>
             <input
               type="range"
@@ -116,8 +114,9 @@
             />
           </div>
           <div>
-            <label for="trim-size" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-              边缘裁切: <span class="font-semibold text-primary-500">{{ trimSize }}px</span>
+            <label for="trim-size" class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1.5">
+              <span>边缘裁切</span>
+              <span class="font-semibold text-primary-500">{{ trimSize }}px</span>
             </label>
             <input
               type="range"
@@ -132,29 +131,53 @@
         </div>
       </section>
 
-      <!-- ④ 输出设置 -->
+      <!-- ③ 输出设置 -->
       <section class="pt-4 border-t border-gray-200 dark:border-gray-700" aria-label="输出设置">
-        <h4 class="section-title"><span class="step-badge">4</span>输出设置</h4>
-        <div class="space-y-4">
+        <h4 class="section-title"><span class="step-badge">3</span>输出设置</h4>
+        <div class="space-y-3">
           <div>
-            <label for="output-format" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-              输出格式
-            </label>
-            <select
-              id="output-format"
-              :value="format"
-              @change="$emit('update:format', $event.target.value)"
-              class="input-field"
-            >
-              <option value="png">PNG (无损)</option>
-              <option value="jpeg">JPG (压缩)</option>
-              <option value="webp">WebP (高效)</option>
-            </select>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label for="output-format" class="block text-sm text-gray-600 dark:text-gray-400 mb-1.5">
+                  输出格式
+                </label>
+                <select
+                  id="output-format"
+                  :value="format"
+                  @change="$emit('update:format', $event.target.value)"
+                  class="input-field"
+                >
+                  <option value="png">PNG (无损)</option>
+                  <option value="jpeg">JPG (压缩)</option>
+                  <option value="webp">WebP (高效)</option>
+                </select>
+              </div>
+              <div>
+                <label for="scale-target" class="block text-sm text-gray-600 dark:text-gray-400 mb-1.5">
+                  输出宽度
+                </label>
+                <select
+                  id="scale-target"
+                  :value="scaleTarget"
+                  @change="$emit('update:scaleTarget', Number($event.target.value))"
+                  class="input-field"
+                >
+                  <option :value="0">原始尺寸</option>
+                  <option :value="512">512px</option>
+                  <option :value="768">768px</option>
+                  <option :value="1024">1024px</option>
+                  <option :value="1080">1080px</option>
+                  <option :value="2048">2048px</option>
+                </select>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">大于目标宽度的分块将等比缩小</p>
           </div>
 
           <div>
-            <label for="output-quality" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-              质量: <span class="font-semibold text-primary-500">{{ quality }}%</span>
+            <label for="output-quality" class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-1.5">
+              <span>质量</span>
+              <span class="font-semibold text-primary-500">{{ quality }}%</span>
             </label>
             <input
               type="range"
@@ -168,27 +191,7 @@
           </div>
 
           <div>
-            <label for="scale-target" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-              输出缩放
-            </label>
-            <select
-              id="scale-target"
-              :value="scaleTarget"
-              @change="$emit('update:scaleTarget', Number($event.target.value))"
-              class="input-field"
-            >
-              <option :value="0">原始尺寸</option>
-              <option :value="512">宽度 512px</option>
-              <option :value="768">宽度 768px</option>
-              <option :value="1024">宽度 1024px</option>
-              <option :value="1080">宽度 1080px</option>
-              <option :value="2048">宽度 2048px</option>
-            </select>
-            <p class="text-xs text-gray-500 mt-1">大于目标宽度的分块将等比缩小</p>
-          </div>
-
-          <div>
-            <label for="naming-template" class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <label for="naming-template" class="block text-sm text-gray-600 dark:text-gray-400 mb-1.5">
               命名模板
             </label>
             <input
@@ -205,14 +208,6 @@
           </div>
         </div>
       </section>
-
-      <!-- 分割总数：实时摘要 -->
-      <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-          <span class="text-sm text-gray-700 dark:text-gray-300">分割总数</span>
-          <span class="text-lg font-bold text-primary-500">{{ rows * cols }} 张</span>
-        </div>
-      </div>
     </div>
   </div>
 </template>

@@ -126,7 +126,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.02em;
   color: rgb(75 85 99);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .dark .section-title {
@@ -162,9 +162,9 @@ body {
 
 .input-field {
   width: 100%;
-  padding: 0.625rem 1rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid rgb(209 213 219);
-  border-radius: 0.625rem;
+  border-radius: 0.5rem;
   transition: all 0.2s ease;
   background-color: white;
   font-size: 0.875rem;
@@ -218,10 +218,14 @@ input[type="range"]::-moz-range-thumb {
 select {
   appearance: none;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 0.75rem center;
+  background-position: right 0.6rem center;
   background-repeat: no-repeat;
-  background-size: 1.25rem;
-  padding-right: 2.5rem;
+  background-size: 1rem;
+}
+
+/* 下拉框需为右侧箭头留出空间（.input-field 的 padding 简写会覆盖 select 的 padding-right） */
+select.input-field {
+  padding-right: 2rem;
 }
 
 .fade-enter-active,
